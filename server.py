@@ -1,11 +1,7 @@
-from typing import Union
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 from fastapi import FastAPI
-from pydantic import BaseModel
-from starlette.responses import FileResponse
 from starlette.responses import RedirectResponse
-from threading import Thread
 from typing import Dict
 from wall import start_wall_ui
 import wall

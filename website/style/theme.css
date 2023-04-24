@@ -1,0 +1,26 @@
+body[theme="dark"] {
+    --background-color-rgb: 29, 31, 33;
+    --text-color-rgb: 240, 240, 240;
+}
+
+body[theme="light"] {
+    --background-color-rgb: 240, 240, 240;
+    --text-color-rgb: 40, 40, 40;
+}
+
+body {
+    --testshit: rgb(67, 185, 194);
+    /*--secondary-color-rgb: 228, 34, 126;*/
+    --secondary-color-rgb: 67, 185, 194;
+
+    --background-color: rgb(var(--background-color-rgb));
+    --secondary-color: rgb(var(--secondary-color-rgb));
+    --text-color: rgb(var(--text-color-rgb));
+    --text-color-weak-1: rgb(var(--text-color-rgb), 0.5);
+    --text-color-weak-2: rgb(var(--text-color-rgb), 0.3);
+    --text-color-weak-3: rgb(var(--text-color-rgb), 0.1);
+    --text-color-on-secondary: var(--background-color);
+    --hover-color: rgb(var(--text-color-rgb), 0.05);
+    --shadow-color: #00000042;
+}
+

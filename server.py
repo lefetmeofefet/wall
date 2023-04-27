@@ -27,18 +27,24 @@ async def get_data_plzzzz():
 
 @app.post("/highlight_hold")
 async def highlight_hold(req: Dict):
-    [hold.highlight() for hold in wall.wall.holds if hold.identifier == req["hold_id"]]
+    [hold.highlight(req["startOrEndHold"]) for hold in wall.wall.holds if hold.identifier == req["holdId"]]
 
 
-@app.post("/highlight_route")
+@app.post("/highlightRoute")
 async def highlight_route(req: Dict):
-    [hold.highlight() for hold in wall.wall.holds if hold.identifier in req["hold_ids"]]
-    [hold.unhighlight() for hold in wall.wall.holds if hold.identifier not in req["hold_ids"]]
+    for hold in wall.wall.holds:
+        should_unhighlight = True
+        for route_hold in req["holds"]:
+            if hold.identifier == route_hold["identifier"]:
+                hold.highlight(start_or_end_hold="startOrEndHold" in route_hold and route_hold["startOrEndHold"])
+                should_unhighlight = False
+        if should_unhighlight:
+            hold.unhighlight()
 
 
 @app.post("/unhighlight_hold")
 async def unhighlight_hold(req: Dict):
-    [hold.unhighlight() for hold in wall.wall.holds if hold.identifier == req["hold_id"]]
+    [hold.unhighlight() for hold in wall.wall.holds if hold.identifier == req["holdId"]]
 
 
 @app.post("/unhighlight_all_holds")
@@ -69,4 +75,4 @@ async def delete_route(req: Dict):
 
 if __name__ == "__main__":
     start_wall_ui()
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run("server:app", host="0.0.0.0", port=80, reload=False)

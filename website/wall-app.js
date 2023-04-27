@@ -5,8 +5,15 @@ import "./components/text-input.js"
 import "./components/x-button.js"
 import "./components/x-icon.js"
 import "./components/x-tag.js"
+import {unhighlightAllHolds} from "./api.js";
 
 createYoffeeElement("wall-app", () => {
+    let currentLocation = window.location.pathname;
+    window.addEventListener("popstate", e => {
+        console.log("State popped!")
+        state.selectedRoute = null
+    })
+
     let state = {
         selectedRoute: null,
     };
@@ -18,13 +25,15 @@ createYoffeeElement("wall-app", () => {
             /*align-items: center;*/
             justify-content: center;
             flex-direction: column;
-            height: -webkit-fill-available;
+            height: 100%;
+            overflow: hidden;
         }
         
         #routes-container {
             display: flex;
             flex-direction: column;
-            padding: 20px 10%;
+            padding: 40px 10%;
+            overflow-y: auto;
         }
         
         .route {
@@ -34,6 +43,7 @@ createYoffeeElement("wall-app", () => {
             border-radius: 0;
             color: unset;
             box-shadow: none;
+            min-height: 22px;
         }
         
         .route + .route {
@@ -54,7 +64,7 @@ createYoffeeElement("wall-app", () => {
             border-radius: 1000px;
             position: fixed;
             right: 10%;
-            bottom: 50px;
+            bottom: 30px;
             color: var(--text-color-on-secondary);
             width: 30px;
             height: 30px;
@@ -65,7 +75,15 @@ createYoffeeElement("wall-app", () => {
     ${() => (state.selectedRoute != null) ?
         html()`
     <route-page route=${() => state.selectedRoute}
-                onbackclicked=${() => state.selectedRoute = null}
+                onbackclicked=${async () => {
+                    state.selectedRoute = null;
+                    for (let hold of State.holds) {
+                        hold.inRoute = false
+                        hold.yoffeeObj.inRoute = false
+                    }
+                    await unhighlightAllHolds();
+                    window.history.back();
+        }}
     ></route-page>
     `
         :
@@ -75,7 +93,11 @@ createYoffeeElement("wall-app", () => {
     </div>
     <div id="routes-container">
         ${() => State.routes.map(route => html()`
-        <x-button class="route" onclick=${() => state.selectedRoute = route}>
+        <x-button class="route" onclick=${() => {
+            let currentLocation = window.location.pathname;
+            window.history.pushState({}, "", `${currentLocation}/route/${route.name}`)
+            state.selectedRoute = route
+        }}>
             <div class="route-name">${() => route.name}</div>
             <div class="route-setter">${() => route.setter}</div>
             <div class="route-grade">V${() => route.grade}</div>

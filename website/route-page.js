@@ -1,8 +1,9 @@
-import {html,  createYoffeeElement} from "./libs/yoffee/yoffee.min.js"
+import {html, createYoffeeElement} from "./libs/yoffee/yoffee.min.js"
 import {State, loadRoutesAndHolds} from "./state.js"
 import "./components/text-input.js"
 import "./components/x-button.js"
 import "./components/x-tag.js"
+import * as api from "./api.js";
 
 
 createYoffeeElement("route-page", (props, self) => {
@@ -12,95 +13,54 @@ createYoffeeElement("route-page", (props, self) => {
     let saveRoute = async () => {
         let routeName = self.shadowRoot.querySelector("#route-name-input").getValue()
         let routeGrade = self.shadowRoot.querySelector("#route-grade-input").getValue()
-        await fetch("/saveRoute", {
-            method: "POST",
-            headers: Object.assign({
-                "Content-Type": "application/json; charset=utf-8",
-            }),
-            body: JSON.stringify(Object.assign(route, {
-                name: routeName,
-                grade: routeGrade
-            })),
-        });
-        await loadRoutesAndHolds();
-        await backClicked()
-    }
+        await api.saveRoute(Object.assign(route, {
+            name: routeName,
+            grade: routeGrade
+        }))
 
-    let deleteRoute = async () => {
-        await fetch("/deleteRoute", {
-            method: "POST",
-            headers: Object.assign({
-                "Content-Type": "application/json; charset=utf-8",
-            }),
-            body: JSON.stringify({identifier: route.identifier}),
-        });
         await loadRoutesAndHolds();
         await backClicked()
     }
 
     let holdClicked = (hold) => {
-        hold.selected = !hold.selected
-        if (hold.selected) {
+        if (!hold.inRoute) {
+            hold.inRoute = true
+            hold.yoffeeObj.inRoute = true
+            hold.startOrEndHold = false
+            hold.yoffeeObj.startOrEndHold = false
             route.holds.push(hold);
-            highlightHold(hold)
-        } else {
+            api.highlightHold(hold)
+        } else if (hold.startOrEndHold) {
+            hold.inRoute = false
+            hold.yoffeeObj.inRoute = false
+            hold.startOrEndHold = false
+            hold.yoffeeObj.startOrEndHold = false
             route.holds = route.holds.filter(h => h.identifier !== hold.identifier);
-            unhighlightHold(hold)
+            api.unhighlightHold(hold)
+        } else {
+            hold.startOrEndHold = true
+            hold.yoffeeObj.startOrEndHold = true
+            api.highlightHold(hold, true)
         }
     }
-
-    let highlightHold = async (hold) => {
-        await fetch("/highlight_hold", {
-            method: "POST",
-            headers: Object.assign({
-                "Content-Type": "application/json",
-            }),
-            body: JSON.stringify({hold_id: hold.identifier})
-        });
-    }
-
 
     for (let hold of route.holds) {
         let foundHold = State.holds.find(h => h.identifier === hold.identifier)
-        foundHold.selected = true
-    }
-    fetch("/highlight_route", {
-        method: "POST",
-        headers: Object.assign({
-            "Content-Type": "application/json",
-        }),
-        body: JSON.stringify({hold_ids: route.holds.map(h => h.identifier)})
-    });
-
-    let unhighlightHold = async (hold) => {
-        await fetch("/unhighlight_hold", {
-            method: "POST",
-            headers: Object.assign({
-                "Content-Type": "application/json; charset=utf-8",
-            }),
-            body: JSON.stringify({hold_id: hold.identifier}),
-        });
+        foundHold.inRoute = true
+        foundHold.yoffeeObj.inRoute = true
+        if (hold.startOrEndHold) {
+            foundHold.startOrEndHold = true
+            foundHold.yoffeeObj.startOrEndHold = true
+        }
     }
 
-    let unhighlightAllHolds = async (hold) => {
-        await fetch("/unhighlight_all_holds", {
-            method: "POST",
-            headers: Object.assign({
-                "Content-Type": "application/json; charset=utf-8",
-            }),
-            body: {},
-        });
-    }
+    api.highlightRoute()
 
     let backClicked = async () => {
-        for (let hold of State.holds) {
-            hold.selected = false
-        }
-        await unhighlightAllHolds();
         props.onbackclicked()
     }
 
-    return html(route, State)`
+    return html(State)`
     <style>
         :host {
             display: flex;
@@ -111,15 +71,18 @@ createYoffeeElement("route-page", (props, self) => {
         
         #header {
             display: flex;
-            height: 80px;
-            padding: 30px;
+            padding: 25px;
             background-color: var(--secondary-color);
             color: #eeeeee;
             align-items: center;
         }
         
+        #route-name-input {
+            max-width: 230px;
+        }
+        
         #header > .title-text {
-            font-size: 34px;
+            font-size: 20px;
             color: var(--text-color-on-secondary);
         }
         
@@ -142,20 +105,23 @@ createYoffeeElement("route-page", (props, self) => {
             height: fit-content;
             margin-right: 20px;
             font-size: 22px;
+            min-width: fit-content;
+            padding-left: 13px;
         }
         
         #holds-container {
             position: relative;
-            height: 60%;
             overflow: hidden;
-            margin: 20px 10%;
+            margin: 5px 10%;
+            margin-bottom: 75px;
+            height: inherit;
         }
         
         #holds-container > .hold {
             position: absolute;
             width: 15px;
             height: 15px;
-            background-color: var(--secondary-color);
+            background-color: #00000050;
             border-radius: 100px;
             color: var(--text-color-on-secondary)
         }
@@ -164,7 +130,7 @@ createYoffeeElement("route-page", (props, self) => {
             border-radius: 1000px;
             position: fixed;
             right: 10%;
-            bottom: 50px;
+            bottom: 30px;
             color: var(--text-color-on-secondary);
             width: 30px;
             height: 30px;
@@ -175,7 +141,7 @@ createYoffeeElement("route-page", (props, self) => {
             border-radius: 1000px;
             position: fixed;
             left: 10%;
-            bottom: 50px;
+            bottom: 30px;
             color: var(--text-color-on-secondary);
             width: 30px;
             height: 30px;
@@ -201,9 +167,12 @@ createYoffeeElement("route-page", (props, self) => {
         ></text-input>
     </div>
     <div id="holds-container">
-        ${State.holds.map(hold => html(hold)`
+        ${State.holds.map(hold => html(hold.yoffeeObj)`
         <div class="hold" 
-             style="${() => `left: ${Math.floor(3 + hold.y * 92)}%; bottom: ${Math.floor(3 + 92 - hold.x * 92)}%; ${hold.selected && "background-color: red"}`}"
+             style="${() => `
+                left: ${Math.floor(3 + hold.yoffeeObj.y * 92)}%; 
+                bottom: ${Math.floor(3 + 92 - hold.yoffeeObj.x * 92)}%; 
+                ${hold.yoffeeObj.inRoute && `background-color: ${hold.yoffeeObj.startOrEndHold ? "#20ff30" : "var(--secondary-color)"};`}`}"
              onclick=${() => holdClicked(hold)}></div>
         `)}
     </div>
@@ -212,7 +181,13 @@ createYoffeeElement("route-page", (props, self) => {
           <x-icon icon="fas fa-check"></x-icon>
     </x-button>
     <x-button id="delete-button"
-              onclick=${() => confirm("U gonna destroy " + route.name + ". Proceed??") && deleteRoute()}>
+              onclick=${async () => {
+        if (confirm("U gonna destroy " + route.name + ". Proceed??")) {
+            await api.deleteRoute()
+            await loadRoutesAndHolds();
+            await backClicked()
+        }
+    }}>
           <x-icon icon="fa fa-trash"></x-icon>
     </x-button>
     `

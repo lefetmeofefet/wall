@@ -8,7 +8,7 @@ from hold import Hold
 from vector import Vector
 
 CORNER_WIDTH = 30
-HOLD_RADIUS = 12
+HOLD_RADIUS = 15
 SAVE_FILE_PATH = "wall.json"
 
 
@@ -53,12 +53,16 @@ class Wall(arcade.Window):
         for corner in self.corners:
             arcade.draw_rectangle_filled(corner.x, corner.y, CORNER_WIDTH, CORNER_WIDTH, (255, 255, 255))
         are_there_highlighted_holds = len([hold for hold in self.holds if hold.highlighted]) > 0
+
         for hold in self.holds:
+            radius = HOLD_RADIUS
             hold_xy = self.convert_wall_to_screen_coordinates(hold.x, hold.y)
             color = (255, 255, 255)
             if are_there_highlighted_holds and not hold.highlighted:
-                color = (100, 100, 100)
-            arcade.draw_circle_filled(hold_xy.x, hold_xy.y, HOLD_RADIUS, color)
+                color = (0, 0, 0, 0)
+            if hold.highlighted and hold.start_or_end_hold:
+                radius *= 1.5
+            arcade.draw_circle_filled(hold_xy.x, hold_xy.y, radius, color)
 
     def convert_wall_to_screen_coordinates(self, x, y):
         top_vector = self.corner_top_right - self.corner_top_left

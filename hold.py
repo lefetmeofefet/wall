@@ -7,12 +7,15 @@ class Hold(Vector):
         super().__init__(x, y)
         self.identifier = str(uuid.uuid4()) if identifier is None else identifier
         self.highlighted = False
+        self.start_or_end_hold = False
 
-    def highlight(self):
+    def highlight(self, start_or_end_hold=False):
         self.highlighted = True
+        self.start_or_end_hold = start_or_end_hold
 
     def unhighlight(self):
         self.highlighted = False
+        self.start_or_end_hold = False
 
     def serialize(self):
         return {"x": self.x, "y": self.y, "identifier": self.identifier}

@@ -4,17 +4,21 @@ import arcade
 import math
 import json
 import os
+
+import database
 from hold import Hold
 from vector import Vector
+import os
 
 CORNER_WIDTH = 30
 HOLD_RADIUS = 15
 SAVE_FILE_PATH = "wall.json"
+os.environ['PYGLET_SHADOW_WINDOW']="0"
 
 
 class Wall(arcade.Window):
     def __init__(self):
-        super().__init__(1, 1, "I AM WALL", fullscreen=True)
+        super().__init__(800, 600, "I AM WALL")
         arcade.set_background_color((80, 80, 80))
         width, height = self.get_size()
         self.corner_top_right = Vector(width - CORNER_WIDTH / 2, height - CORNER_WIDTH / 2)
@@ -23,28 +27,39 @@ class Wall(arcade.Window):
         self.corner_bottom_left = Vector(CORNER_WIDTH / 2, CORNER_WIDTH / 2)
 
         self.holds = []
+        #
+        global routes
 
-        if os.path.exists(SAVE_FILE_PATH):
-            with open(SAVE_FILE_PATH, 'r') as openfile:
-                serialized_wall = json.load(openfile)
-                for serialized_hold in serialized_wall["holds"]:
-                    self.holds.append(Hold.deserialize(serialized_hold))
-                global routes
-                routes = serialized_wall["routes"]
-                corners = serialized_wall["corners"]
-                self.corner_top_right = Vector.deserialize(corners["top_right"])
-                self.corner_top_left = Vector.deserialize(corners["top_left"])
-                self.corner_bottom_right = Vector.deserialize(corners["bottom_right"])
-                self.corner_bottom_left = Vector.deserialize(corners["bottom_left"])
-        else:
-            num_holds = 0
-            for y in range(num_holds):
-                for x in range(num_holds):
-                    if (x == 0 or x == num_holds - 1) and (y == 0 or y == num_holds - 1):
-                        continue
-                    self.holds.append(Hold(x / (num_holds - 1), y / (num_holds - 1)))
-        self.corners = [self.corner_top_right, self.corner_top_left, self.corner_bottom_right,
-                        self.corner_bottom_left]
+        self.holds, routes, self.corners = database.load_wall_from_database()
+        self.corner_top_right = self.corners[0]
+        self.corner_top_left = self.corners[1]
+        self.corner_bottom_right = self.corners[2]
+        self.corner_bottom_left = self.corners[3]
+
+        # ToDo DAVDAVDAVDAVIT - use the gray codfe once t oload the file into the database
+        # if os.path.exists(SAVE_FILE_PATH):
+        #     with open(SAVE_FILE_PATH, 'r') as openfile:
+        #         serialized_wall = json.load(openfile)
+        #         for serialized_hold in serialized_wall["holds"]:
+        #             self.holds.append(Hold.deserialize(serialized_hold))
+        #         # global routes
+        #         routes = serialized_wall["routes"]
+        #         print(routes)
+        #         corners = serialized_wall["corners"]
+        #         self.corner_top_right = Vector.deserialize(corners["top_right"])
+        #         self.corner_top_left = Vector.deserialize(corners["top_left"])
+        #         self.corner_bottom_right = Vector.deserialize(corners["bottom_right"])
+        #         self.corner_bottom_left = Vector.deserialize(corners["bottom_left"])
+        # else:
+        #     num_holds = 0
+        #     for y in range(num_holds):
+        #         for x in range(num_holds):
+        #             if (x == 0 or x == num_holds - 1) and (y == 0 or y == num_holds - 1):
+        #                 continue
+        #             self.holds.append(Hold(x / (num_holds - 1), y / (num_holds - 1)))
+        # self.corners = [self.corner_top_right, self.corner_top_left, self.corner_bottom_right,
+        #                 self.corner_bottom_left]
+        #
         self.dragged_corner = None
         self.dragged_hold = None
 
@@ -300,24 +315,41 @@ def start_wall_thread():
     global wall
     wall = Wall()
     arcade.run()
+    print("LaLAlAlA")
 
     # After window is closed, save shit
-    serialized_wall = json.dumps({
-        "holds": [hold.serialize() for hold in wall.holds],
-        "routes": routes,
-        "corners": {
-            "top_right": wall.corner_top_right.serialize(),
-            "top_left": wall.corner_top_left.serialize(),
-            "bottom_right": wall.corner_bottom_right.serialize(),
-            "bottom_left": wall.corner_bottom_left.serialize(),
-        }
-    })
-    with open(SAVE_FILE_PATH, "w") as file:
-        file.write(serialized_wall)
-    exit()
+    # serialized_wall = json.dumps({
+    #     "holds": [hold.serialize() for hold in wall.holds],
+    #     "routes": routes,
+    #     "corners": {
+    #         "top_right": wall.corner_top_right.serialize(),
+    #         "top_left": wall.corner_top_left.serialize(),
+    #         "bottom_right": wall.corner_bottom_right.serialize(),
+    #         "bottom_left": wall.corner_bottom_left.serialize(),
+    #     }
+    # })
+
+    database.save_wall_in_database(wall, routes)
+
+    # EXAMPLE CODE FOR HOW TO ADD A ROUTE TO THE THING _ DAVDAVDAVDAVIT
+    # temp_route = {
+    #     "name": "test route",
+    #     "grade": "25",
+    #     "setter": "tester",
+    #     "holds": []
+    # }
+    # database.add_route_to_database(temp_route)
+
+    # with open(SAVE_FILE_PATH, "w") as file:
+    #     file.write(serialized_wall)
+    # exit()
 
 
 def start_wall_ui():
     # thread = Thread(target=start_wall_thread, args=(wall_container,))
     # thread.start()
     _thread.start_new_thread(start_wall_thread, ())
+
+
+if __name__ == '__main__':
+    start_wall_thread()

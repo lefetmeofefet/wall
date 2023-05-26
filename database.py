@@ -57,7 +57,7 @@ def load_wall_from_database():
     routes = []
     for route in route_collection.find():
         routes.append(route)
-        print(route)  # ToDo remove, this is just to show
+        print(route)  # ToDo remove, this is just to show#
     corners = []
     for corner in corner_collection.find():
         corners.append(corner)

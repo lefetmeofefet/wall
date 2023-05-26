@@ -57,7 +57,7 @@ def load_wall_from_database():
     routes = []
     for route in route_collection.find():
         routes.append(route)
-        print(route) # ToDo remove, this is just to show
+        print(route)  # ToDo remove, this is just to show
     corners = []
     for corner in corner_collection.find():
         corners.append(corner)
@@ -70,15 +70,3 @@ def load_wall_from_database():
                corner_bottom_left]
 
     return holds, routes, corners
-
-# for hole in hole_collection.find():
-#     print(hole)
-# for route in route_collection.find():
-#     print(route)
-# document = {'num': '1'}
-# result = hole_collection.insert_one(document)
-# print('Document inserted with ID:', result.inserted_id)
-#
-# document = {'name': 'davit', 'grade': 'v3', 'holes': []}
-# result = collection.insert_one(document)
-# print('Document inserted with ID:', result.inserted_id)

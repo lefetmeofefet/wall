@@ -18,7 +18,7 @@ os.environ['PYGLET_SHADOW_WINDOW']="0"
 
 class Wall(arcade.Window):
     def __init__(self):
-        super().__init__(800, 600, "I AM WALL")
+        super().__init__(1, 1, "I AM WALL", fullscreen=True)
         arcade.set_background_color((80, 80, 80))
         width, height = self.get_size()
         self.corner_top_right = Vector(width - CORNER_WIDTH / 2, height - CORNER_WIDTH / 2)

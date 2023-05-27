@@ -18,14 +18,12 @@ def save_wall_in_database(wall, routes):
     corner_collection.delete_many({})
 
     hole_collection.insert_many([hold.serialize() for hold in wall.holds])
-
     route_collection.insert_many([{
         "name": route["name"],
         "grade": route["grade"],
         "setter": route["setter"],
-        "holds": [{"holdId": hold["holdId"],
-                   "isStartOrEndHold": False if "startOrEndHold" not in hold else hold["startOrEndHold"]} for hold in
-                  route["holds"]]
+        "holds": [{"holdId": hold["holdId"], "isStartOrEndHold": False if "startOrEndHold" not in hold else hold["startOrEndHold"]}
+                  for hold in route["holds"]]
     } for route in routes
     ])
 

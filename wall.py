@@ -36,7 +36,7 @@ class Wall(arcade.Window):
         self.corner_bottom_right = self.corners[2]
         self.corner_bottom_left = self.corners[3]
 
-        # ToDo DAVDAVDAVDAVIT - use the gray codfe once t oload the file into the database
+        # # ToDo DAVDAVDAVDAVIT - use the gray codfe once t oload the file into the database
         # if os.path.exists(SAVE_FILE_PATH):
         #     with open(SAVE_FILE_PATH, 'r') as openfile:
         #         serialized_wall = json.load(openfile)
@@ -59,7 +59,7 @@ class Wall(arcade.Window):
         #             self.holds.append(Hold(x / (num_holds - 1), y / (num_holds - 1)))
         # self.corners = [self.corner_top_right, self.corner_top_left, self.corner_bottom_right,
         #                 self.corner_bottom_left]
-        #
+
         self.dragged_corner = None
         self.dragged_hold = None
 

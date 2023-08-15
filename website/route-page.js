@@ -19,6 +19,7 @@ createYoffeeElement("route-page", (props, self) => {
         }))
 
         await loadRoutesAndHolds();
+        debugger
         await backClicked()
     }
 
@@ -29,7 +30,7 @@ createYoffeeElement("route-page", (props, self) => {
             hold.startOrEndHold = false
             hold.yoffeeObj.startOrEndHold = false
             route.holds.push(hold);
-            api.highlightHold(hold)
+            api.highlightHold(hold, false)
         } else if (hold.startOrEndHold) {
             hold.inRoute = false
             hold.yoffeeObj.inRoute = false
@@ -54,7 +55,7 @@ createYoffeeElement("route-page", (props, self) => {
         }
     }
 
-    api.highlightRoute()
+    api.highlightRoute(route)
 
     let backClicked = async () => {
         props.onbackclicked()
@@ -183,7 +184,7 @@ createYoffeeElement("route-page", (props, self) => {
     <x-button id="delete-button"
               onclick=${async () => {
         if (confirm("U gonna destroy " + route.name + ". Proceed??")) {
-            await api.deleteRoute()
+            await api.deleteRoute(route)
             await loadRoutesAndHolds();
             await backClicked()
         }

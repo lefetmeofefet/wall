@@ -8,11 +8,20 @@ import "./components/x-tag.js"
 import {unhighlightAllHolds} from "./api.js";
 
 createYoffeeElement("wall-app", () => {
-    let currentLocation = window.location.pathname;
+    let isInRouteUrl = false
     window.addEventListener("popstate", e => {
         console.log("State popped!")
-        state.selectedRoute = null
+        exitRoutePage()
     })
+
+    let exitRoutePage = async () => {
+        state.selectedRoute = null;
+        for (let hold of State.holds) {
+            hold.inRoute = false
+            hold.yoffeeObj.inRoute = false
+        }
+        await unhighlightAllHolds();
+    }
 
     let state = {
         selectedRoute: null,
@@ -76,13 +85,10 @@ createYoffeeElement("wall-app", () => {
         html()`
     <route-page route=${() => state.selectedRoute}
                 onbackclicked=${async () => {
-                    state.selectedRoute = null;
-                    for (let hold of State.holds) {
-                        hold.inRoute = false
-                        hold.yoffeeObj.inRoute = false
+                    await exitRoutePage()
+                    if (isInRouteUrl) {
+                        window.history.back();
                     }
-                    await unhighlightAllHolds();
-                    window.history.back();
         }}
     ></route-page>
     `
@@ -96,6 +102,7 @@ createYoffeeElement("wall-app", () => {
         <x-button class="route" onclick=${() => {
             let currentLocation = window.location.pathname;
             window.history.pushState({}, "", `${currentLocation}/route/${route.name}`)
+            isInRouteUrl = true
             state.selectedRoute = route
         }}>
             <div class="route-name">${() => route.name}</div>

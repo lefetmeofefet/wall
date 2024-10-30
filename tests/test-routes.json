@@ -1,0 +1,47 @@
+{
+  "routes": [
+    {
+      "name": "Jug life",
+      "grade": "3",
+      "setter": "Daweet",
+      "identifier": "1",
+      "holds": [{"identifier": "1"}, {"identifier": "2"}]
+    }, {
+      "name": "Shrimp the Crimp",
+      "grade": "5",
+      "setter": "Darvit",
+      "identifier": "2",
+      "holds": [{"identifier": "1"}, {"identifier": "3"}]
+    }, {
+      "name": "Couch batata",
+      "grade": "4",
+      "setter": "Dahooid",
+      "identifier": "3",
+      "holds": [{"identifier": "3"}, {"identifier": "4"}]
+    }, {
+      "name": "The meaning of Wife",
+      "grade": "8",
+      "setter": "me",
+      "identifier": "4",
+      "holds": [{"identifier": "1"}, {"identifier": "4"}]
+    }, {
+      "name": "JMP",
+      "grade": "8",
+      "setter": "me",
+      "identifier": "5",
+      "holds": [{"identifier": "2"}, {"identifier": "4"}]
+    }, {
+      "name": "Flordflorp",
+      "grade": "13",
+      "setter": "shlrmek",
+      "identifier": "6",
+      "holds": [{"identifier": "1"}, {"identifier": "2"}, {"identifier": "4"}]
+    }
+  ],
+  "holds": [
+    {"x": 0.2, "y": 0.3, "identifier": "1"},
+    {"x": 0.7, "y": 0.2, "identifier": "2"},
+    {"x": 0.5, "y": 0.5, "identifier": "3"},
+    {"x": 0.4, "y": 0.6, "identifier": "4"}
+  ]
+}

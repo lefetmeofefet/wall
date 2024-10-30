@@ -56,6 +56,10 @@ customElements.define("text-input", class extends YoffeeElement {
                 input[type=number] {
                   -moz-appearance: textfield;
                 }
+                
+                input::selection {
+                    background: var(--selection-background, #0000ff10);
+                }
             </style>
             <style>
             ${() => this.state.rtl && `
@@ -68,6 +72,7 @@ customElements.define("text-input", class extends YoffeeElement {
                    placeholder="${() => this.props.placeholder}"
                    onchange=${() => this.props.changed && this.props.changed()}
                    onfocus=${() => this.props.focused && this.props.focused()}
+                   onfocusout=${() => this.selected = false}
                    onkeyup=${e => {
             this.props.keyup && this.props.keyup();
             this.calcRtl(e)
@@ -104,5 +109,10 @@ customElements.define("text-input", class extends YoffeeElement {
         if (rtl !== this.state.rtl) {
             this.state.rtl = rtl;
         }
+    }
+
+    select() {
+        this.selected = true
+        return this.shadowRoot.querySelector("input").select()
     }
 });

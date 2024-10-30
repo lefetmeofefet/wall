@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WALL!</title>
+
+    <meta name="viewport"
+          content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="HomeWall your life with WALL!">
+    <meta name="keywords" content="Wall, climbing">
+    <meta name="author" content="WALL INC">
+
+    <!--Favicon from https://favicon.io/-->
+    <link rel="apple-touch-icon" sizes="180x180" href="./res/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./res/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./res/favicon-16x16.png">
+    <link rel="manifest" href="./res/site.webmanifest">
+    <link rel="icon" href="./favicon.ico" />
+
+    <!--Font Roboto Mono-->
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Mono&display=swap" rel="stylesheet">
+    <link href='https://fonts.googleapis.com/css?family=Heebo' rel='stylesheet'>
+    <link href='https://fonts.googleapis.com/css?family=Poppins' rel='stylesheet'>
+
+    <!--Styles-->
+    <link href="./style/scrollbar-style.css" rel="stylesheet">
+    <link href="./style/theme.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', 'Heebo', 'Roboto', 'sans-serif';
+            height: 100%;
+            margin: 0;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        html {
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body theme="light">
+
+<!--Icons-->
+<link rel="stylesheet" href="https://kit-free.fontawesome.com/releases/latest/css/free.min.css" media="all">
+<link rel="stylesheet" href="https://kit-free.fontawesome.com/releases/latest/css/free-v4-shims.min.css"
+      media="all">
+
+<!--DayJs-->
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/relativeTime.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/locale/he.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/locale/ru.js"></script>
+<script>
+    dayjs.extend(dayjs_plugin_relativeTime);
+</script>
+
+<!--Toast-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+<!--Device detection-->
+<script>
+    function isIOS() {
+        if (/iPad|iPhone|iPod/.test(navigator.platform)) {
+            return true;
+        } else {
+            return navigator.maxTouchPoints &&
+                navigator.maxTouchPoints > 2 &&
+                /MacIntel/.test(navigator.platform);
+        }
+    }
+
+    window.isIOS = isIOS();
+    window.isAndroid = /(android)/i.test(navigator.userAgent);
+    window.isMobile = window.isAndroid || window.isIOS
+</script>
+
+<!--App-->
+<script src="./wall-app.js" type="module"></script>
+<wall-app></wall-app>
+</body>
+</html>

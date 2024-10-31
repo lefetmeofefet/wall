@@ -114,14 +114,14 @@ async function createHold() {
     return await queryNeo4jSingleResult(`
     // We want sequential ids so we use Counter node
     MERGE (counter:Counter {name: "routeIdCounter"})
-    ON CREATE SET counter.value = 0
+    ON CREATE SET counter.value = -1
     SET counter.value = counter.value + 1
     WITH counter.value AS newId
     
     CREATE (hold:Hold{
         id: newId,
-        x: 0,
-        y: 0
+        x: 0.5,
+        y: 0.5
     })
     RETURN hold.id as id,
            hold.x as x,

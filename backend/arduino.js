@@ -30,8 +30,13 @@ const sendDataToArduino = (message) => {
     })
 }
 
-function setLEDs(leds) {
-    sendDataToArduino(JSON.stringify(leds))
+async function setLEDs(leds) {
+    // sendDataToArduino(JSON.stringify(leds))
+    for (let led of leds) {
+        sendDataToArduino(`${led.r},${led.g},${led.b},${led.i}`)
+        await new Promise(resolve => setTimeout(resolve, 50))
+    }
+
 }
 
 function clearLEDs() {

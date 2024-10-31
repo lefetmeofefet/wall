@@ -214,8 +214,8 @@ createYoffeeElement("route-page", (props, self) => {
     
     #holds-container > .hold {
         position: absolute;
-        width: 22px;
-        height: 22px;
+        width: 24px;
+        height: 24px;
         background-color: #00000050;
         border-radius: 100px;
         color: var(--text-color-on-secondary);

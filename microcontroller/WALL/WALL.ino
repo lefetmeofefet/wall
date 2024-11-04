@@ -4,6 +4,7 @@
 #include <BLE2902.h>
 #include <Arduino_JSON.h>
 #include <Preferences.h>
+#include <FastLED.h>
 
 
 #define NUM_LEDS 300
@@ -18,8 +19,8 @@ BLECharacteristic *pCharacteristic = NULL;
 
 
 // UUIDs for BLE service and characteristics
-#define SERVICE_UUID        "4fafc201-1fb5-459e-cdbe-c5c9c331914b"
-#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-abcd-ea07361b26a8"
+#define SERVICE_UUID        "5c8468d0-024e-4a0c-a2f1-4742299119e3"
+#define CHARACTERISTIC_UUID "82155e2a-76a2-42fb-8273-ea01aa87c5be"
 
 String getWallName() {
   preferences.begin("settings", true);  // Open in read-only mode
@@ -43,12 +44,12 @@ class MessageCallbacks : public BLECharacteristicCallbacks {
     String command = message["command"];
 
     if (command == "sendWallName") {
-      setWallName(message["wallName"])
+      setWallName(message["wallName"]);
     } else if (command == "getWallName") {
       String wallName = getWallName();
       JSONVar response;
       response["wallName"] = wallName;
-      sendMessage(wallName)
+      sendMessage(JSON.stringify(response));
     } else if (command == "setLeds") {
       JSONVar ledsList = message["leds"];
 
@@ -57,12 +58,12 @@ class MessageCallbacks : public BLECharacteristicCallbacks {
         leds[i] = CRGB(0, 0, 0);
       }
       // Turn on route leds
-      for (let i=0; i<ledsList.length(); i++) {
+      for (int i=0; i<ledsList.length(); i++) {
         JSONVar ledGroup = ledsList[i];
         int r = ledGroup["r"];
         int g = ledGroup["g"];
         int b = ledGroup["b"];
-        for (int j=0; j<ledGroup["i"].length; j++) {
+        for (int j=0; j<ledGroup["i"].length(); j++) {
           int index = ledGroup["i"][j];
           leds[index] = CRGB(r, g, b);
         }
@@ -81,7 +82,7 @@ class MessageCallbacks : public BLECharacteristicCallbacks {
   }
 };
 
-bool deviceConnected = false
+bool deviceConnected = false;
 class ConnectionCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
       deviceConnected = true;
@@ -90,19 +91,18 @@ class ConnectionCallbacks: public BLEServerCallbacks {
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
     }
-}
+};
 
 void sendMessage(String message) {
   pCharacteristic->setValue(message);
   pCharacteristic->notify();
 }
 
-
 void setupBluetooth() {
-    BLEDevice::init("Climbing Wall ESP32");
-
     String wallName = getWallName();
-    pServer = BLEDevice::createServer(wallName);
+    BLEDevice::init(wallName);
+
+    pServer = BLEDevice::createServer();
     pServer->setCallbacks(new ConnectionCallbacks());
 
     BLEService *pService = pServer->createService(SERVICE_UUID);
@@ -113,11 +113,11 @@ void setupBluetooth() {
       BLECharacteristic::PROPERTY_NOTIFY
     );
 
-    //pCharacteristic->addDescriptor(new BLE2902())
+    pCharacteristic->addDescriptor(new BLE2902());
     pCharacteristic->setCallbacks(new MessageCallbacks());
     pService->start();
 
-    BLEAdvertising *pAdvertising = BLEDevice::getAdvertising()
+    BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
     pAdvertising->setScanResponse(true);
     // pAdvertising->setMinPreferred(0x06);  // functions that help with iOS issue
@@ -137,7 +137,7 @@ void setupLeds() {
 }
 
 void setup() {
-  Serial.begin(115200)
+  Serial.begin(115200);
   setupBluetooth();
   setupLeds();
 }

@@ -48,7 +48,7 @@ function sendBTMessage(message) {
 
 function setWallName(wallName) {
     sendBTMessage({
-        command: "setName",
+        command: "setWallName",
         wallName
     })
 }
@@ -57,7 +57,7 @@ let receiveWallName
 
 async function getWallName() {
     sendBTMessage({
-        command: "getName",
+        command: "getWallName",
     })
     return new Promise(resolve => receiveWallName = resolve)
 }

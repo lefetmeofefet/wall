@@ -7,6 +7,7 @@ import "./components/x-loader.js"
 import "./components/x-button.js"
 import "./components/x-icon.js"
 import "./components/x-tag.js"
+import {setWallName} from "./bluetooth.js";
 
 createYoffeeElement("routes-list", () => {
     return html(GlobalState)`
@@ -14,8 +15,6 @@ createYoffeeElement("routes-list", () => {
 <style>
     :host {
         display: flex;
-        /*align-items: center;*/
-        /*justify-content: center;*/
         flex-direction: column;
         height: 100%;
         overflow: hidden;
@@ -111,8 +110,17 @@ ${() => GlobalState.loading ? html()`
 </style>
 ` : ""}
 
-<div id="title">
-    WALL
+<div id="title"
+     onclick=${() => {
+         let newWallName = prompt("What would you like to call your wall?")
+         if (newWallName != null) {
+             GlobalState.loading = true
+             setWallName(newWallName)
+             GlobalState.wallName = newWallName
+             GlobalState.loading = false
+         }
+     }}>
+    ${() => GlobalState.wallName}
 </div>
 <div id="filters-container">
 </div>

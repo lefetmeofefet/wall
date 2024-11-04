@@ -1,8 +1,10 @@
-import {enterRoute, exitRoute, getRoutesAndHolds} from "./api.js";
+import {getRoutesAndHolds} from "./api.js";
 import {getUrlParams, registerUrlListener, updateUrlParams} from "./utilz/url-utilz.js";
+import {clearLeds, highlightRoute} from "./bluetooth.js";
 
 const GlobalState = {
     loading: true,
+    wallName: null,
 
     /** @type {Route} */
     selectedRoute: null,
@@ -28,18 +30,12 @@ async function loadRoutesAndHolds() {
     }
 }
 loadRoutesAndHolds()
-    .then(() => {
-        let urlParams = getUrlParams()
-        if (urlParams.route != null) {
-            enterRoutePage(GlobalState.routes.find(r => r.id === urlParams.route))
-        }
-    })
 
 /** @param route {Route} */
 async function enterRoutePage(route) {
     GlobalState.selectedRoute = route
     updateUrlParams({route: route.id})
-    await enterRoute(route.id)
+    highlightRoute(GlobalState.selectedRoute)
 }
 
 async function exitRoutePage() {
@@ -49,7 +45,7 @@ async function exitRoutePage() {
         hold.inRoute = false
         hold.startOrFinishHold = false
     }
-    await exitRoute()
+    clearLeds()
     await loadRoutesAndHolds()
 }
 registerUrlListener(() => exitRoutePage())

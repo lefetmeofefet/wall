@@ -66,19 +66,6 @@ async function setRouteStars(id, stars) {
     return await post("/setRouteStars", {id, stars})
 }
 
-// Arduino functions
-async function enterRoute(id) {
-    return await post("/enterRoute", {id})
-}
-
-async function exitRoute() {
-    return await post("/exitRoute", {})
-}
-
-async function setHoldState(holdId, isOn, startOrFinishHold) {
-    return await post("/setHoldState", {holdId, isOn, startOrFinishHold})
-}
-
 export {
     getRoutesAndHolds,
     getRoutes,
@@ -92,7 +79,4 @@ export {
     addHoldToRoute,
     removeHoldFromRoute,
     setRouteStars,
-    enterRoute,
-    exitRoute,
-    setHoldState
 }

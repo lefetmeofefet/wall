@@ -95,46 +95,6 @@ app.post('/setRouteStars', async (req, res) => {
     res.json({status: 'success'})
 })
 
-function getRGB(isOn, startOrFinishHold) {
-    if (isOn) {
-        if (startOrFinishHold) {
-            return {r: 0, g: 255, b: 0}
-        }
-        return {r: 0, g: 0, b: 255}
-    }
-    return {r: 0, g: 0, b: 0}
-}
-
-app.post('/enterRoute', async (req, res) => {
-    const {id} = req.body
-    clearLEDs()
-    await new Promise(resolve => setTimeout(resolve, 1))
-    let route = await getRoute(id)
-    let leds = route.holds.map(hold => {
-        return {
-            ...getRGB(hold != null, hold?.startOrFinishHold),
-            i: hold.id
-        }
-    })
-    setLEDs(leds)
-    res.json({status: 'success'})
-})
-
-app.post('/exitRoute', async (req, res) => {
-    // setLEDs(new Array(NUM_LEDS).fill(0).map((_, index) => ({r: 0, g: 0, b: 0, i: index})))
-    clearLEDs()
-    res.json({status: 'success'})
-})
-
-app.post('/setHoldState', async (req, res) => {
-    const {holdId, isOn, startOrFinishHold} = req.body
-    setLEDs([{
-        ...getRGB(isOn, startOrFinishHold),
-        i: holdId
-    }])
-    res.json({status: 'success'})
-})
-
 
 let server;
 if (Config.dev) {

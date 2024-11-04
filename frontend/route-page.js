@@ -9,11 +9,12 @@ import {
     createHold,
     getHolds,
     moveHold,
-    removeHoldFromRoute, setHoldState,
+    removeHoldFromRoute,
     setRouteStars,
     updateRoute
 } from "./api.js";
 import {showToast} from "./utilz/toaster.js";
+import {setHoldState} from "./bluetooth.js";
 
 
 createYoffeeElement("route-page", (props, self) => {
@@ -119,7 +120,7 @@ createYoffeeElement("route-page", (props, self) => {
                 await removeHoldFromRoute(hold.id, GlobalState.selectedRoute.id)
                 GlobalState.selectedRoute.holds = GlobalState.selectedRoute.holds.filter(h => h.id !== hold.id)
             }
-            await setHoldState(hold.id, hold.inRoute, hold.startOrFinishHold)
+            setHoldState(hold)
         }
     }
 
@@ -132,7 +133,7 @@ createYoffeeElement("route-page", (props, self) => {
                 GlobalState.selectedRoute.holds.push({id: hold.id, startOrFinishHold: true})
                 hold.inRoute = true
                 hold.startOrFinishHold = true
-                await setHoldState(hold.id, hold.inRoute, hold.startOrFinishHold)
+                setHoldState(hold)
             }
         }
     }
@@ -205,28 +206,41 @@ createYoffeeElement("route-page", (props, self) => {
         padding-left: 13px;
     }
     
+    #route {
+        display: flex;
+        height: inherit;
+        position: relative;
+        margin-bottom: 70px;
+        background-image: url("./res/wall.jpg");
+        background-size: 100% 100%; /* Stretches the image to fit the div exactly */
+        background-position: center; /* Centers the image in the div */
+        background-repeat: no-repeat; /* Prevents tiling */
+    }
+    
     #holds-container {
         position: relative;
-        margin: 13px 13px 100px 13px;
+        margin: 13px 13px 13px 13px;
         height: inherit;
         touch-action: none;
+        width: -webkit-fill-available;
     }
     
     #holds-container > .hold {
         position: absolute;
         width: 24px;
         height: 24px;
-        background-color: #00000050;
+        background-color: #00000060;
         border-radius: 100px;
         color: var(--text-color-on-secondary);
         transform: translate(-50%, 50%);
+        opacity: 0.6;
     }
     
-    #plus-button, #edit-button, #star-button {
+    #plus-button, #edit-button, #star-button, #delete-button {
         border-radius: 1000px;
         position: fixed;
         right: 10%;
-        bottom: 30px;
+        bottom: 15px;
         color: var(--text-color-on-secondary);
         width: 30px;
         height: 30px;
@@ -252,13 +266,8 @@ createYoffeeElement("route-page", (props, self) => {
     }
     
     #delete-button {
-        border-radius: 1000px;
-        position: fixed;
         left: 10%;
-        bottom: 30px;
         color: var(--text-color-on-secondary);
-        width: 30px;
-        height: 30px;
         background-color: #fa3344;
     }
 </style>
@@ -323,26 +332,29 @@ ${() => GlobalState.loading ? html()`
                 onpointerup=${e => !isMobile && !e.target.selected && e.target.select()}
     ></text-input>
 </div>
-<div id="holds-container">
-    ${() => GlobalState.holds.map(hold => html(hold)`
-    <div class="hold"
-         style="${() => `
-            left: ${hold.x * 100}%; 
-            bottom: ${hold.y * 100}%; 
-            ${hold.inRoute && `background-color: ${hold.startOrFinishHold ? "#20ff30" : "var(--secondary-color)"};`}`}"
-         onpointerdown=${e => {
-             dragContainer = self.shadowRoot.querySelector("#holds-container")
-             clickedHold = hold
-             dragStartPosition = {x: e.pageX, y: e.pageY}
-             e.stopPropagation()
-             e.preventDefault()
-             longPressTimer = setTimeout(() => holdLongPressed(hold), LONG_PRESS_TIME)
-         }}
-         
-         >
+<div id="route">
+    <div id="holds-container">
+        ${() => GlobalState.holds.map(hold => html(hold)`
+        <div class="hold"
+             style="${() => `
+                left: ${hold.x * 100}%; 
+                bottom: ${hold.y * 100}%; 
+                ${hold.inRoute ? `background-color: ${hold.startOrFinishHold ? "#20ff30" : "var(--secondary-color)"};` : ""}`}"
+             onpointerdown=${e => {
+            dragContainer = self.shadowRoot.querySelector("#holds-container")
+            clickedHold = hold
+            dragStartPosition = {x: e.pageX, y: e.pageY}
+            e.stopPropagation()
+            e.preventDefault()
+            longPressTimer = setTimeout(() => holdLongPressed(hold), LONG_PRESS_TIME)
+        }}
+             
+             >
+        </div>
+        `)}
     </div>
-    `)}
 </div>
+
 <x-button id="plus-button"
           onclick=${async () => {
               let {hold} = await createHold()

@@ -1,3 +1,6 @@
+import {GlobalState} from "./state.js";
+import {showToast} from "./utilz/toaster.js";
+
 const WALL_SERVICE_ID = '5c8468d0-024e-4a0c-a2f1-4742299119e3'
 const CHARACTERISTIC_ID = '82155e2a-76a2-42fb-8273-ea01aa87c5be'  // We don't really use this, its mandatory in BLE
 
@@ -14,6 +17,7 @@ async function scanAndConnect() {
     console.log(`found device `, device)
     console.log(`Connecting to ${device.name}`)
     await connectToWall(device)
+    return device.name
 }
 
 async function connectToWall(device) {
@@ -32,7 +36,6 @@ async function connectToWall(device) {
                 receiveWallName(message.wallName)
             }
         }
-
     })
     await characteristic.startNotifications()
 
@@ -40,14 +43,26 @@ async function connectToWall(device) {
     // await server.disconnect()
 }
 
-function sendBTMessage(message) {
-    const encoder = new TextEncoder()
-    characteristic.writeValue(encoder.encode(JSON.stringify(message)))
-    console.log("Sending to esp: ", message)
+async function sendBTMessage(message) {
+    try {
+        const encoder = new TextEncoder()
+        await characteristic.writeValue(encoder.encode(JSON.stringify(message)))
+        console.log("Sending to esp: ", message)
+    } catch(e) {
+        console.log("Error sending via BT: ", e)
+        showToast(`Error sending Bluetooth message: ${e.toString()}`)
+        if (e.code === 9) {
+            // "GATT operation failed for unknown reason."
+        } else if (e.code === 19) {
+            // Disconnected
+            console.log("Disconnected")
+            GlobalState.wallName = null
+        }
+    }
 }
 
-function setWallName(wallName) {
-    sendBTMessage({
+async function setWallName(wallName) {
+    await sendBTMessage({
         command: "setWallName",
         wallName
     })
@@ -56,7 +71,7 @@ function setWallName(wallName) {
 let receiveWallName
 
 async function getWallName() {
-    sendBTMessage({
+    await sendBTMessage({
         command: "getWallName",
     })
     return new Promise(resolve => receiveWallName = resolve)
@@ -72,32 +87,32 @@ function getLedRGB(isOn, startOrFinishHold) {
     return {r: 0, g: 0, b: 0}
 }
 
-function highlightRoute(route) {
+async function highlightRoute(route) {
     let normalLedGroup = getLedRGB(true, false)
     let startOrFinishLedGroup = getLedRGB(true, true)
     normalLedGroup.i = []
     startOrFinishLedGroup.i = []
     for (let hold of route.holds) {
         if (hold.startOrFinishHold) {
-            normalLedGroup.i.push(hold.id)
-        } else {
             startOrFinishLedGroup.i.push(hold.id)
+        } else {
+            normalLedGroup.i.push(hold.id)
         }
     }
-    sendBTMessage({
+    await sendBTMessage({
         command: "setLeds",
         leds: [normalLedGroup, startOrFinishLedGroup].filter(ledGroup => ledGroup.i.length > 0)
     })
 }
 
-function clearLeds() {
-    sendBTMessage({
+async function clearLeds() {
+    await sendBTMessage({
         command: "clearLeds"
     })
 }
 
-function setHoldState(hold) {
-    sendBTMessage({
+async function setHoldState(hold) {
+    await sendBTMessage({
         command: "setLed",
         led: {
             ...getLedRGB(hold.inRoute, hold.startOrFinishHold),

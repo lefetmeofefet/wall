@@ -1,10 +1,11 @@
-import {html, createYoffeeElement, YoffeeElement} from "../libs/yoffee/yoffee.min.js"
+import {YoffeeElement, createYoffeeElement, html} from "../libs/yoffee/yoffee.min.js";
 
 
 createYoffeeElement("x-dialog", class extends YoffeeElement {
     constructor() {
         super({
             open: false,
+            isCentered: false,
         })
 
         // document.addEventListener(
@@ -25,9 +26,9 @@ createYoffeeElement("x-dialog", class extends YoffeeElement {
 ${() => this.state.open && html(this.state)`
 <style>
     :host {
-        position: fixed;
-        top: ${() => this.state.position.y}px;
-        left: ${() => this.state.position.x}px;
+        position: absolute;
+        top: ${() => this.state.isCentered ? "50%" : `${this.state.position.y}px`};
+        left: ${() => this.state.isCentered ? "50%" : `${this.state.position.x}px`};
         display: flex;
         flex-direction: column;
         z-index: 1;
@@ -36,8 +37,14 @@ ${() => this.state.open && html(this.state)`
         box-shadow: 1px 1px 5px 0px #000000c2;
         color: #bbbbbb;
     }
-    
 </style>
+${() => this.state.isCentered && html()`
+<style>
+    :host {
+        transform: translate(-50%, -50%);
+    }
+</style>
+`}
 <slot
     onclick=${() => e => {
             e.stopPropagation();
@@ -61,15 +68,21 @@ ${() => this.state.open && html(this.state)`
         }}
 ></slot>
 `}
-            `
+
+${() => !this.state.open && html()`
+<style>
+    :host {
+        display: none !important;
+    }
+</style>
+`}
+`
     }
 
     open(anchor, shouldPopIntoScreen, margin) {
         if (anchor === "center") {
-            this.state.position = {
-                x: window.innerWidth / 2 - 150,
-                y: window.innerHeight / 2 - 50,
-            }
+            this.state.position = {x: 0, y: 0}
+            this.state.isCentered = true
         } else {
             this.state.position = anchor.x != null ?
                 {
@@ -79,25 +92,24 @@ ${() => this.state.open && html(this.state)`
                     x: anchor.offsetLeft,
                     y: anchor.offsetTop
                 };
+            this.state.isCentered = false
         }
 
-
-
         this.state.open = true;
-
         if (shouldPopIntoScreen) {
             let {width, height} = this.getBoundingClientRect();
             margin = margin || 20;
-
-            if (this.state.position.x + width + margin > window.innerWidth) {
-                this.state.position.x = window.innerWidth - width - margin;
+            let screenWidth = Math.min(window.screen.width, window.innerWidth);
+            let screenHeight = Math.min(window.screen.height, window.innerHeight);
+            if (this.state.position.x + width + margin > screenWidth) {
+                this.state.position.x = screenWidth - width - margin;
             }
             if (this.state.position.x < margin) {
                 this.state.position.x = margin;
             }
 
-            if (this.state.position.y + height + margin > window.innerHeight) {
-                this.state.position.y = window.innerHeight - height - margin;
+            if (this.state.position.y + height + margin > screenHeight) {
+                this.state.position.y = screenHeight - height - margin;
             }
             if (this.state.position.y < margin) {
                 this.state.position.y = margin;
@@ -110,5 +122,9 @@ ${() => this.state.open && html(this.state)`
 
     close() {
         this.state.open = false;
+    }
+
+    isOpen() {
+        return this.state.open
     }
 });

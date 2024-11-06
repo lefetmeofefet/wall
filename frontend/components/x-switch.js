@@ -23,12 +23,12 @@ customElements.define("x-switch", class extends YoffeeElement {
                     align-items: center;
                     --circle-size: 25px;
                     --circle-margin: 3px;
-                    height: calc(var(--circle-size) + var(--circle-margin) * 2 + 1px)
+                    height: calc(var(--circle-size) + var(--circle-margin) * 2 + 1px);
+                    gap: 15px;
                 }
 
                 #text {
                     font-size: inherit;
-                    margin-right: 15px;
                 }
 
                 #switch-container {
@@ -42,7 +42,7 @@ customElements.define("x-switch", class extends YoffeeElement {
 
                 #circle {
                     position: absolute;
-                    background-color: #eeeeee;
+                    background-color: var(--circle-color, #eeeeee);
                     border-radius: 100px;
                     transition: 0.3s;
                     top: var(--circle-margin);
@@ -58,7 +58,7 @@ customElements.define("x-switch", class extends YoffeeElement {
                 }
 
                 #switch-container[is-on] {
-                    background-color: var(--on-color);
+                    background-color: var(--text-color-weak-3);
                 }
             </style>
 

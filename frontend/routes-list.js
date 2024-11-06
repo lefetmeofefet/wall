@@ -7,9 +7,11 @@ import "./components/x-loader.js"
 import "./components/x-button.js"
 import "./components/x-icon.js"
 import "./components/x-tag.js"
+import "./components/x-dialog.js"
+import "./components/x-switch.js"
 import {setWallName} from "./bluetooth.js";
 
-createYoffeeElement("routes-list", () => {
+createYoffeeElement("routes-list", (props, self) => {
     return html(GlobalState)`
 <link href="./style/scrollbar-style.css" rel="stylesheet">
 <style>
@@ -111,11 +113,11 @@ ${() => GlobalState.loading ? html()`
 ` : ""}
 
 <div id="title"
-     onclick=${() => {
+     onclick=${async () => {
          let newWallName = prompt("What would you like to call your wall?")
          if (newWallName != null) {
              GlobalState.loading = true
-             setWallName(newWallName)
+             await setWallName(newWallName)
              GlobalState.wallName = newWallName
              GlobalState.loading = false
          }
@@ -156,5 +158,44 @@ ${() => GlobalState.loading ? html()`
           }}>
     <x-icon icon="fa fa-plus"></x-icon>
 </x-button>
+
+<div id="settings-button" 
+     style="display: none;"
+     class="header-button"
+     tabindex="0"
+     onkeydown=${() => e => e.stopPropagation()}
+     onmousedown=${() => () => {
+        let _dropdown = self.shadowRoot.querySelector("#settings-dialog")
+        let _button = self.shadowRoot.querySelector("#settings-button")
+        if (_dropdown.isOpen()) {
+            _dropdown.close()
+        }
+        else {
+            _dropdown.open({
+                x: _button.offsetLeft,
+                y: _button.offsetTop + _button.offsetHeight + 5
+            }, true)
+        }
+    }}
+     onblur=${() => requestAnimationFrame(() => self.shadowRoot.querySelector("#settings-dialog").close())}>
+    <x-icon icon="fa fa-bars"></x-icon>
+<!--    <x-icon icon="fa fa-ellipsis-v"></x-icon>-->
+</div>
+
+<x-dialog id="settings-dialog">
+    <div id="settings-container">
+        <div id="theme-toggle">
+            <div>Theme</div>
+            <x-switch value=${() => GlobalState.darkTheme}
+                      style="--circle-size: 20px;"
+                      switched=${() => () => updateTheme(!GlobalState.darkTheme)}>
+                 ${() => GlobalState.darkTheme ? "dark" : "light"}
+            </x-switch>
+        </div>
+        <div id="snakeio">
+            Snake me up
+        </div>
+    </div>
+</x-dialog>
 `
 });

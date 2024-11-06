@@ -6,10 +6,8 @@
 #include <Preferences.h>
 #include <FastLED.h>
 
-
 #define NUM_LEDS 300
 #define DATA_PIN 19
-#define BRIGHTNESS 120  // Brightness level (0 - 255)
 
 Preferences preferences;
 CRGB leds[NUM_LEDS];
@@ -34,6 +32,20 @@ void setWallName(String name) {
     preferences.begin("settings", false);  // Open in read-write mode
     preferences.putString("wallName", name);
     preferences.end();
+}
+
+int getBrightness() {
+  preferences.begin("settings", true);  // Open in read-only mode
+  int value = preferences.getInt("brightness", 120);  // Brightness level (0 - 255)
+  preferences.end();
+  return value;
+}
+
+void setBrightness(int brightness) {
+  preferences.begin("settings", false);  // Open in read-write mode
+  preferences.putString("brightness", brightness);
+  preferences.end();
+  FastLED.setBrightness(brightness);
 }
 
 class MessageCallbacks : public BLECharacteristicCallbacks {
@@ -86,10 +98,12 @@ bool deviceConnected = false;
 class ConnectionCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
       deviceConnected = true;
+      BLEDevice::startAdvertising();
     }
 
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
+      BLEDevice::startAdvertising();
     }
 };
 
@@ -126,8 +140,8 @@ void setupBluetooth() {
 }
 
 void setupLeds() {
-  FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
-  FastLED.setBrightness(BRIGHTNESS);
+  FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
+  FastLED.setBrightness(getBrightness());
 
   // Shut down leds on startup
   for (int i=0; i<NUM_LEDS; i++) {
@@ -145,16 +159,3 @@ void setup() {
 void loop() {
     delay(20);
 }
-
-
-// void loop() {
-//   leds[0] = CRGB::Red;      // Set first LED to red
-//   leds[1] = CRGB::Green;    // Set second LED to green
-//   leds[2] = CRGB::Blue;     // Set third LED to blue
-//   FastLED.show();           // Update the LED strip
-//   delay(1000);
-
-//   FastLED.clear();          // Turn off all LEDs
-//   FastLED.show();
-//   delay(1000);
-// }

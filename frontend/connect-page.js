@@ -8,6 +8,7 @@ import "./components/x-icon.js"
 import "./components/x-tag.js"
 import {getWallName, scanAndConnect} from "./bluetooth.js";
 import {getUrlParams} from "./utilz/url-utilz.js";
+import {showToast} from "./utilz/toaster.js";
 
 createYoffeeElement("connect-page", () => {
     let state = {
@@ -60,14 +61,21 @@ createYoffeeElement("connect-page", () => {
 <x-button id="connect-button"
           onclick=${async () => {
               GlobalState.loading = true
-              await scanAndConnect()
-              GlobalState.wallName = await getWallName()
-              GlobalState.loading = false
-        
-              // If we have route in url, enter it
-              let urlParams = getUrlParams()
-              if (urlParams.route != null) {
-                  await enterRoutePage(GlobalState.routes.find(r => r.id === urlParams.route))
+              try {
+                  GlobalState.wallName = await scanAndConnect()
+                  
+                  // If we have route in url, enter it
+                  let urlParams = getUrlParams()
+                  if (urlParams.route != null) {
+                      await enterRoutePage(GlobalState.routes.find(r => r.id === urlParams.route))
+                  }
+              } catch(e) {
+                  console.log("Error connecting to BT: ", e)
+                  if (e.code !== 8) {  // If user pressed "Cancel"
+                      showToast(`Error connecting to Bluetooth: ${e.toString()}`)
+                  }
+              } finally {
+                  GlobalState.loading = false
               }
           }}>
     Connect to Wall

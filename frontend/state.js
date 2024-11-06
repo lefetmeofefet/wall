@@ -4,6 +4,7 @@ import {clearLeds, highlightRoute} from "./bluetooth.js";
 
 const GlobalState = {
     loading: true,
+    darkTheme: false,
     wallName: null,
 
     /** @type {Route} */

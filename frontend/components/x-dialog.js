@@ -26,7 +26,7 @@ createYoffeeElement("x-dialog", class extends YoffeeElement {
 ${() => this.state.open && html(this.state)`
 <style>
     :host {
-        position: absolute;
+        position: fixed;
         top: ${() => this.state.isCentered ? "50%" : `${this.state.position.y}px`};
         left: ${() => this.state.isCentered ? "50%" : `${this.state.position.x}px`};
         display: flex;

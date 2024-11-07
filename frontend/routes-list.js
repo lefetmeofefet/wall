@@ -1,5 +1,12 @@
 import {html, createYoffeeElement} from "./libs/yoffee/yoffee.min.js"
-import {GlobalState, enterRoutePage, loadRoutesAndHolds} from "./state.js";
+import {
+    GlobalState,
+    enterRoutePage,
+    loadRoutesAndHolds,
+    updateTheme,
+    enterConfigureHoldsPage,
+    snakeMeUp
+} from "./state.js";
 import {createRoute} from "./api.js";
 import "./route-page.js"
 import "./components/text-input.js"
@@ -9,7 +16,7 @@ import "./components/x-icon.js"
 import "./components/x-tag.js"
 import "./components/x-dialog.js"
 import "./components/x-switch.js"
-import {setWallName} from "./bluetooth.js";
+import {setWallBrightness, setWallName} from "./bluetooth.js";
 
 createYoffeeElement("routes-list", (props, self) => {
     return html(GlobalState)`
@@ -20,18 +27,82 @@ createYoffeeElement("routes-list", (props, self) => {
         flex-direction: column;
         height: 100%;
         overflow: hidden;
-    }
-    
-    #title {
-        position: relative;
-        font-size: 55px;
         padding: 20px 10% 0 10%;
     }
+    
+    #header {
+        position: relative;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+    
+    #header > #title {
+        font-size: 55px;
+    }
+    
+    #header > #refresh-button {
+        border-radius: 1000px;
+        color: var(--text-color-weak-1);
+        width: 15px;
+        height: 30px;
+        background-color: var(--text-color-weak-3);
+    }
+    
+    x-switch {
+        --circle-color: var(--secondary-color);
+    }
+    
+    #header > #settings-button {
+        transition: 300ms;
+        color: var(--text-color);
+        cursor: pointer;
+        padding: 19px 10px;
+        margin: 0px 5px;
+        font-size: 18px;
+        border-bottom: 3px solid #00000000;
+        display: flex;
+        gap: 8px;
+        -webkit-tap-highlight-color: transparent; /* Stops the blue background highlight */
+    }
+    
+    #header > #settings-button:hover {
+        transition: 300ms;
+        color: var(--secondary-color);
+    }
+    
+    #settings-dialog {
+        padding: 20px 5px;
+        color: var(--text-color);
+        background-color: var(--background-color); 
+    }
+    
+    #settings-container {
+        display: flex;
+        flex-direction: column;
+        align-items: baseline;
+    }
+    
+    #settings-container > * {
+        padding: 10px 20px;
+        justify-content: space-between;
+        display: flex;
+        align-items: center;
+        gap: 30px;
+    }
+    
+    #settings-container > x-button {
+        --overlay-color: rgb(var(--text-color-rgb), 0.1);
+        --ripple-color: rgb(var(--text-color-rgb), 0.3);
+        box-shadow: none;
+        color: var(--text-color);
+        width: -webkit-fill-available;
+    }
+    
     
     #routes-container {
         display: flex;
         flex-direction: column;
-        padding: 0 10%;
         overflow-y: auto;
     }
     
@@ -43,6 +114,8 @@ createYoffeeElement("routes-list", (props, self) => {
         color: unset;
         box-shadow: none;
         min-height: 22px;
+        --overlay-color: rgb(var(--text-color-rgb), 0.1);
+        --ripple-color: rgb(var(--text-color-rgb), 0.3);
     }
     
     .route + .route {
@@ -66,22 +139,11 @@ createYoffeeElement("routes-list", (props, self) => {
         margin-right: 10px;
     }
     
-    #refresh-button {
-        border-radius: 1000px;
-        position: fixed;
-        right: calc(13% + 70px);
-        top: 40px;
-        color: var(--text-color-on-secondary);
-        width: 15px;
-        height: 30px;
-        background-color: var(--text-color-weak-1);
-    }
-    
     #new-route-button {
         border-radius: 1000px;
         position: fixed;
         right: 13%;
-        top: 40px;
+        bottom: 40px;
         color: var(--text-color-on-secondary);
         width: 30px;
         height: 30px;
@@ -93,7 +155,7 @@ createYoffeeElement("routes-list", (props, self) => {
 ${() => GlobalState.loading ? html()`
 <style>
     /* Loader */
-    #title::after {
+    #header::after {
         content: "";
         position: absolute;
         bottom: 0;
@@ -112,18 +174,79 @@ ${() => GlobalState.loading ? html()`
 </style>
 ` : ""}
 
-<div id="title"
-     onclick=${async () => {
-         let newWallName = prompt("What would you like to call your wall?")
-         if (newWallName != null) {
-             GlobalState.loading = true
-             await setWallName(newWallName)
-             GlobalState.wallName = newWallName
-             GlobalState.loading = false
-         }
-     }}>
-    ${() => GlobalState.wallName}
+<div id="header">
+    <div id="title"
+         onclick=${async () => {
+            let newWallName = prompt("What would you like to call your wall?")
+            if (newWallName != null) {
+                GlobalState.loading = true
+                await setWallName(newWallName)
+                GlobalState.wallName = newWallName
+                GlobalState.loading = false
+            }
+        }}>
+        ${() => GlobalState.wallName}
+    </div>
+    <x-button id="refresh-button"
+              onclick=${async () => {
+                  await loadRoutesAndHolds()
+              }}>
+        <x-icon icon="fa fa-sync ${() => GlobalState.loading ? "fa-spin" : ""}"></x-icon>
+    </x-button>
+    <div id="settings-button" 
+         style="margin-left: auto;"
+         tabindex="0"
+         onkeydown=${() => e => e.stopPropagation()}
+         onmousedown=${() => () => {
+            let _dropdown = self.shadowRoot.querySelector("#settings-dialog")
+            let _button = self.shadowRoot.querySelector("#settings-button")
+            if (_dropdown.isOpen()) {
+                _dropdown.close()
+            }
+            else {
+                _dropdown.open({
+                    x: _button.offsetLeft,
+                    y: _button.offsetTop + _button.offsetHeight + 5
+                }, true)
+            }
+        }}
+         onblur=${() => requestAnimationFrame(() => self.shadowRoot.querySelector("#settings-dialog").close())}>
+        <x-icon icon="fa fa-bars"></x-icon>
+    <!--    <x-icon icon="fa fa-ellipsis-v"></x-icon>-->
+    </div>
+    
+    <x-dialog id="settings-dialog">
+        <div id="settings-container">
+            <x-button onclick=${() => enterConfigureHoldsPage()}>
+                Configure Holds
+            </x-button>
+            <x-button onclick=${async () => {
+                    let brightness = parseInt(prompt("Enter brightness from 0 to 100: "))
+                    if (!isNaN(brightness)) {
+                        let realBrightness = Math.round((brightness / 100) * 255)
+                        await setWallBrightness(realBrightness)
+                        GlobalState.wallBrightness = realBrightness
+                    }
+                }}>
+                Brightness:
+                <div>${() => Math.round((GlobalState.wallBrightness / 255) * 100)}%</div>
+            </x-button>
+            <x-button id="snakeio"
+                      onclick=${() => snakeMeUp()}>
+                Snake me up
+            </x-button>
+            <div id="theme-toggle">
+                <div>Theme:</div>
+                <x-switch value=${() => GlobalState.darkTheme}
+                          style="--circle-size: 20px;"
+                          switched=${() => () => updateTheme(!GlobalState.darkTheme)}>
+                     ${() => GlobalState.darkTheme ? "dark" : "light"}
+                </x-switch>
+            </div>
+        </div>
+    </x-dialog>
 </div>
+
 <div id="filters-container">
 </div>
 <div id="routes-container">
@@ -144,12 +267,6 @@ ${() => GlobalState.loading ? html()`
     `)}
 </div>
 
-<x-button id="refresh-button"
-          onclick=${async () => {
-              await loadRoutesAndHolds()
-          }}>
-    <x-icon icon="fa fa-sync ${() => GlobalState.loading ? "fa-spin" : ""}"></x-icon>
-</x-button>
 <x-button id="new-route-button" 
           onclick=${async () => {
               let {route} = await createRoute()
@@ -158,44 +275,5 @@ ${() => GlobalState.loading ? html()`
           }}>
     <x-icon icon="fa fa-plus"></x-icon>
 </x-button>
-
-<div id="settings-button" 
-     style="display: none;"
-     class="header-button"
-     tabindex="0"
-     onkeydown=${() => e => e.stopPropagation()}
-     onmousedown=${() => () => {
-        let _dropdown = self.shadowRoot.querySelector("#settings-dialog")
-        let _button = self.shadowRoot.querySelector("#settings-button")
-        if (_dropdown.isOpen()) {
-            _dropdown.close()
-        }
-        else {
-            _dropdown.open({
-                x: _button.offsetLeft,
-                y: _button.offsetTop + _button.offsetHeight + 5
-            }, true)
-        }
-    }}
-     onblur=${() => requestAnimationFrame(() => self.shadowRoot.querySelector("#settings-dialog").close())}>
-    <x-icon icon="fa fa-bars"></x-icon>
-<!--    <x-icon icon="fa fa-ellipsis-v"></x-icon>-->
-</div>
-
-<x-dialog id="settings-dialog">
-    <div id="settings-container">
-        <div id="theme-toggle">
-            <div>Theme</div>
-            <x-switch value=${() => GlobalState.darkTheme}
-                      style="--circle-size: 20px;"
-                      switched=${() => () => updateTheme(!GlobalState.darkTheme)}>
-                 ${() => GlobalState.darkTheme ? "dark" : "light"}
-            </x-switch>
-        </div>
-        <div id="snakeio">
-            Snake me up
-        </div>
-    </div>
-</x-dialog>
 `
 });

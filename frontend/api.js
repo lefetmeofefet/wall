@@ -1,17 +1,24 @@
 import {GlobalState} from "./state.js";
+import {showToast} from "./utilz/toaster.js";
 
 async function post(url, data) {
     GlobalState.loading = true
-    let res = await fetch(url, {
-        method: "POST",
-        headers: Object.assign({
-            "Content-Type": "application/json; charset=utf-8",
-        }),
-        body: data == null ? null : JSON.stringify(data)
-    });
-    let json = await res.json()
-    GlobalState.loading = false
-    return json
+    try {
+        let res = await fetch(url, {
+            method: "POST",
+            headers: Object.assign({
+                "Content-Type": "application/json; charset=utf-8",
+            }),
+            body: data == null ? null : JSON.stringify(data)
+        });
+        return await res.json()
+    } catch (e) {
+        console.error(e)
+        showToast(`Error communicating with server: ${e.toString()}`, {error: true})
+        throw e
+    } finally {
+        GlobalState.loading = false
+    }
 }
 
 async function getRoutesAndHolds() {

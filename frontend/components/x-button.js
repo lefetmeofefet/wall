@@ -1,4 +1,4 @@
-import {YoffeeElement, createYoffeeElement, html} from "../libs/yoffee/yoffee.min.js";
+import {YoffeeElement, createYoffeeElement, html} from "../../libs/yoffee/yoffee.min.js";
 
 
 customElements.define("x-button", class extends YoffeeElement {
@@ -37,7 +37,6 @@ customElements.define("x-button", class extends YoffeeElement {
         return html(this.props, this.state)`
             <style>
                 :host {
-                    /*--button-padding: 8px 16px;*/
                     -webkit-tap-highlight-color: rgba(0,0,0,0);
                     -webkit-tap-highlight-color: transparent;
                     
@@ -47,13 +46,12 @@ customElements.define("x-button", class extends YoffeeElement {
                     
                     align-items: center;
                     justify-content: center;
-                    background-color: var(--button-color);
+                    /*background-color: rgb(83, 62, 30);*/
                     color: #eeeeee;
                     
                     outline: none;
                     border-radius: 3px;
-                    
-                    padding: var(--button-padding, 8px 16px);
+                    padding: 8px 16px;
                     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
                     transition: 0.2s;
                     cursor: pointer;
@@ -65,7 +63,7 @@ customElements.define("x-button", class extends YoffeeElement {
                     opacity: 0;
                     top: 0;
                     left: 0;
-                    background-color: white;
+                    background-color: var(--overlay-color, white);
                     position: absolute;
                     width: 100%;
                     height: 100%;
@@ -86,8 +84,7 @@ customElements.define("x-button", class extends YoffeeElement {
                 
                 .ripple{
                     position: absolute;
-                    /*background: #fff;*/
-                    background: #aaa;
+                    background: var(--ripple-color, #fff);
                     border-radius: 50%;
                     width: 5px;
                     height: 5px;

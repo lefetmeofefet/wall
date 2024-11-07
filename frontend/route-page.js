@@ -19,7 +19,7 @@ import {setHoldState} from "./bluetooth.js";
 
 createYoffeeElement("route-page", (props, self) => {
     let state = {
-        editMode: false
+        editMode: GlobalState.configuringHolds
     }
 
     const saveRoute = async () => {
@@ -44,10 +44,12 @@ createYoffeeElement("route-page", (props, self) => {
     }
 
     // set holds in route
-    for (let {id, startOrFinishHold} of GlobalState.selectedRoute.holds) {
-        let hold = GlobalState.holdMapping.get(id)
-        hold.inRoute = true
-        hold.startOrFinishHold = startOrFinishHold
+    if (GlobalState.selectedRoute != null) {
+        for (let {id, startOrFinishHold} of GlobalState.selectedRoute.holds) {
+            let hold = GlobalState.holdMapping.get(id)
+            hold.inRoute = true
+            hold.startOrFinishHold = startOrFinishHold
+        }
     }
 
     // Dragging
@@ -58,14 +60,16 @@ createYoffeeElement("route-page", (props, self) => {
     let longPressTimer
     let isAfterLongPress = false
     const MIN_DISTANCE_FOR_DRAG = 10
-    const LONG_PRESS_TIME = 700
+    const LONG_PRESS_TIME = 500
 
-    window.addEventListener('pointerup', () => {
+    window.addEventListener('pointerup', async () => {
         clearTimeout(longPressTimer)
 
         if (state.editMode && clickedHold != null) {
             if (dragging) {
-                moveHold(clickedHold.id, clickedHold.x, clickedHold.y)
+                if (GlobalState.configuringHolds) {
+                    moveHold(clickedHold.id, clickedHold.x, clickedHold.y)
+                }
             } else {
                 holdClicked(clickedHold)
             }
@@ -86,7 +90,7 @@ createYoffeeElement("route-page", (props, self) => {
     }
 
     window.addEventListener('pointermove', (event) => {
-        if (clickedHold != null && state.editMode) {
+        if (clickedHold != null) {
             if (!dragging && isDistanceEnoughForDragging(event.pageX, event.pageY)) {
                 // We wait to make the click be dismissed because of dragging=true
                 dragging = true
@@ -95,9 +99,11 @@ createYoffeeElement("route-page", (props, self) => {
             if (dragging) {
                 event.preventDefault();
 
-                let {x, y, width, height} = dragContainer.getBoundingClientRect()
-                clickedHold.x = bound((event.pageX - x) / width)
-                clickedHold.y = bound((height - event.pageY + y) / height)
+                if (GlobalState.configuringHolds) {
+                    let {x, y, width, height} = dragContainer.getBoundingClientRect()
+                    clickedHold.x = bound((event.pageX - x) / width)
+                    clickedHold.y = bound((height - event.pageY + y) / height)
+                }
             }
         }
     })
@@ -110,7 +116,13 @@ createYoffeeElement("route-page", (props, self) => {
             return
         }
 
-        if (state.editMode) {
+        if (GlobalState.configuringHolds) {
+            hold.inRoute = !hold.inRoute
+            hold.startOrFinishHold = false
+            await setHoldState(hold)
+        }
+
+        if (state.editMode && GlobalState.selectedRoute != null) {
             hold.inRoute = !hold.inRoute
             hold.startOrFinishHold = false
             if (hold.inRoute) {
@@ -120,25 +132,35 @@ createYoffeeElement("route-page", (props, self) => {
                 await removeHoldFromRoute(hold.id, GlobalState.selectedRoute.id)
                 GlobalState.selectedRoute.holds = GlobalState.selectedRoute.holds.filter(h => h.id !== hold.id)
             }
-            setHoldState(hold)
+            await setHoldState(hold)
         }
     }
 
     const holdLongPressed = async hold => {
         console.log("long press")
         isAfterLongPress = true
-        if (state.editMode) {
+
+        if (GlobalState.configuringHolds) {
             if (!hold.inRoute) {
-                await addHoldToRoute(hold.id, GlobalState.selectedRoute.id, true)
-                GlobalState.selectedRoute.holds.push({id: hold.id, startOrFinishHold: true})
                 hold.inRoute = true
                 hold.startOrFinishHold = true
-                setHoldState(hold)
+                await setHoldState(hold)
             }
+        }
+
+        if (state.editMode && GlobalState.selectedRoute != null) {
+            if (hold.inRoute) {
+                await removeHoldFromRoute(hold.id, GlobalState.selectedRoute.id)
+            }
+            await addHoldToRoute(hold.id, GlobalState.selectedRoute.id, true)
+            GlobalState.selectedRoute.holds.push({id: hold.id, startOrFinishHold: true})
+            hold.inRoute = true
+            hold.startOrFinishHold = true
+            await setHoldState(hold)
         }
     }
 
-    return html(GlobalState, state, GlobalState.selectedRoute)`
+    return html(GlobalState, state, GlobalState.selectedRoute || {})`
 <style>
     :host {
         display: flex;
@@ -275,7 +297,7 @@ createYoffeeElement("route-page", (props, self) => {
 ${() => GlobalState.loading ? html()`
 <style>
     /* Loader */
-    #header::after {
+    #title::after {
         content: "";
         position: absolute;
         bottom: 0;
@@ -304,33 +326,36 @@ ${() => GlobalState.loading ? html()`
     <div id="inputs-container">
         <text-input id="route-name-input"
                     class="title-text header-input"
-                    value=${GlobalState.selectedRoute.name}
+                    value=${GlobalState.selectedRoute?.name || GlobalState.wallName}
                     changed=${() => () => saveRoute()}
                     submitted=${() => () => console.log("Submitted.")}
                     onpointerdown=${e => isMobile && !e.target.selected && e.target.select()}
                     onpointerup=${e => !isMobile && !e.target.selected && e.target.select()}
         ></text-input>
+        ${() => GlobalState.configuringHolds ? "" : html()`
         <text-input id="route-setter-input"
                     class="title-text header-input"
-                    value=${GlobalState.selectedRoute.setter}
+                    value=${GlobalState.selectedRoute?.setter || "Configuring wall"}
                     changed=${() => () => saveRoute()}
                     submitted=${() => () => console.log("Submitted.")}
                     onpointerdown=${e => isMobile && !e.target.selected && e.target.select()}
                     onpointerup=${e => !isMobile && !e.target.selected && e.target.select()}
         ></text-input>
+        `}
     </div>
-    
+    ${() => GlobalState.configuringHolds ? "" : html()`
     <div id="v-div" class="title-text"
          onpointerdown=${() => self.shadowRoot.querySelector("#route-grade-input").select()}>V</div>
     <text-input id="route-grade-input"
                 type="number"
                 class="title-text header-input"
-                value=${GlobalState.selectedRoute.grade}
+                value=${GlobalState.selectedRoute?.grade}
                 submitted=${() => () => console.log("Submitted.")}
                 changed=${() => () => saveRoute()}
                 onpointerdown=${e => isMobile && !e.target.selected && e.target.select()}
                 onpointerup=${e => !isMobile && !e.target.selected && e.target.select()}
     ></text-input>
+    `}
 </div>
 <div id="route">
     <div id="holds-container">
@@ -363,24 +388,25 @@ ${() => GlobalState.loading ? html()`
           }}>
     <x-icon icon="fa fa-plus"></x-icon>
 </x-button>
+${() => GlobalState.configuringHolds ? "" : html()`
 <x-button id="edit-button"
           active=${() => state.editMode}
           onclick=${async () => {
-              state.editMode = !state.editMode
-              if (state.editMode) {
-                  showToast("Holds are draggable now!")
-              }
-          }}>
+        state.editMode = !state.editMode
+        if (state.editMode) {
+            showToast("Click holds to edit the route!")
+        }
+    }}>
     <x-icon icon="fa fa-edit"></x-icon>
 </x-button>
 <x-button id="delete-button"
           onclick=${async () => {
-              if (confirm(`U gonna destroy ${GlobalState.selectedRoute.name}. Proceed??`)) {
-                  await api.deleteRoute(GlobalState.selectedRoute.id)
-                  await loadRoutesAndHolds()
-                  await exitRoutePage()
-              }
-          }}>
+        if (confirm(`U gonna destroy ${GlobalState.selectedRoute.name}. Proceed??`)) {
+            await api.deleteRoute(GlobalState.selectedRoute.id)
+            await loadRoutesAndHolds()
+            await exitRoutePage()
+        }
+    }}>
     <x-icon icon="fa fa-trash"></x-icon>
 </x-button>
 <x-button id="star-button"
@@ -397,5 +423,7 @@ ${() => GlobalState.loading ? html()`
     ${() => GlobalState.selectedRoute?.stars > 1 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
     ${() => GlobalState.selectedRoute?.stars > 2 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
 </x-button>
+`}
+
 `
 })

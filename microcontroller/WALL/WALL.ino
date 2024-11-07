@@ -5,6 +5,8 @@
 #include <Arduino_JSON.h>
 #include <Preferences.h>
 #include <FastLED.h>
+#include <esp_bt_main.h>
+#include <esp_bt_device.h>
 
 #define NUM_LEDS 300
 #define DATA_PIN 19
@@ -15,6 +17,7 @@ CRGB leds[NUM_LEDS];
 BLEServer *pServer = NULL;
 BLECharacteristic *pCharacteristic = NULL;
 
+int appleIndex = -1;
 
 // UUIDs for BLE service and characteristics
 #define SERVICE_UUID        "5c8468d0-024e-4a0c-a2f1-4742299119e3"
@@ -32,6 +35,8 @@ void setWallName(String name) {
     preferences.begin("settings", false);  // Open in read-write mode
     preferences.putString("wallName", name);
     preferences.end();
+    esp_ble_gap_set_device_name(name.c_str());
+    BLEDevice::startAdvertising();
 }
 
 int getBrightness() {
@@ -43,9 +48,16 @@ int getBrightness() {
 
 void setBrightness(int brightness) {
   preferences.begin("settings", false);  // Open in read-write mode
-  preferences.putString("brightness", brightness);
+  Serial.println("Brightness: " + brightness);
+  preferences.putInt("brightness", brightness);
   preferences.end();
   FastLED.setBrightness(brightness);
+}
+
+void sendMessage(String message) {
+  pCharacteristic->setValue(message);
+  pCharacteristic->notify();
+  Serial.println("Sent message: " + message);
 }
 
 class MessageCallbacks : public BLECharacteristicCallbacks {
@@ -55,14 +67,19 @@ class MessageCallbacks : public BLECharacteristicCallbacks {
     JSONVar message = JSON.parse(messageString);
     String command = message["command"];
 
-    if (command == "sendWallName") {
-      setWallName(message["wallName"]);
-    } else if (command == "getWallName") {
-      String wallName = getWallName();
+    if (command == "getInfo") {
       JSONVar response;
-      response["wallName"] = wallName;
+      response["brightness"] = getBrightness();
+      response["wallName"] = getWallName();
+      response["id"] = getBluetoothMACAddress();
+      response["command"] = "wallInfo";
       sendMessage(JSON.stringify(response));
+    } else if (command == "setWallName") {
+      setWallName(message["wallName"]);
+    } else if (command == "setBrightness") {
+      setBrightness(message["brightness"]);
     } else if (command == "setLeds") {
+      appleIndex = -1;  // Stop snake game
       JSONVar ledsList = message["leds"];
 
       // Turn off all leds
@@ -83,6 +100,30 @@ class MessageCallbacks : public BLECharacteristicCallbacks {
       FastLED.show();
     } else if (command == "setLed") {
       JSONVar led = message["led"];
+      if (message["snakeMode"]) {
+        if (appleIndex == -1) {
+          createApple();
+        }
+        
+        CRGB existingLed = leds[led["i"]];
+        if (appleIndex == (int)led["i"]) {
+          JSONVar response;
+          response["color"] = led;
+          response["command"] = "playerAteApple";
+          sendMessage(JSON.stringify(response));
+          createApple();
+        } else if (((int)led["r"] != 0 && (int)led["g"] != 0 && (int)led["b"] != 0) && (existingLed.r != 0 && existingLed.g != 0 && existingLed.b != 0)) {
+          // if new led tries to override existing led, and kill the player
+          //Serial.println("Killing " + (int)led["r"] + " " + (int)led["g"] + " " + (int)led["b"]);
+          JSONVar response;
+          response["color"] = led;
+          response["command"] = "killPlayer";
+          sendMessage(JSON.stringify(response));
+          return;
+        }
+      } else {
+        appleIndex = -1;  // Stop snake game 
+      }
       leds[led["i"]] = CRGB(led["r"], led["g"], led["b"]);
       FastLED.show();
     } else if (command == "clearLeds") {
@@ -93,6 +134,17 @@ class MessageCallbacks : public BLECharacteristicCallbacks {
     }
   }
 };
+
+void createApple() {
+  while (true) {
+    appleIndex = random(0, NUM_LEDS);
+    if (leds[appleIndex].r == 0 && leds[appleIndex].g == 0 && leds[appleIndex].b == 0) {
+      leds[appleIndex] = CRGB(255, 0, 0);
+      FastLED.show();
+      break;
+    }
+  }
+}
 
 bool deviceConnected = false;
 class ConnectionCallbacks: public BLEServerCallbacks {
@@ -106,11 +158,6 @@ class ConnectionCallbacks: public BLEServerCallbacks {
       BLEDevice::startAdvertising();
     }
 };
-
-void sendMessage(String message) {
-  pCharacteristic->setValue(message);
-  pCharacteristic->notify();
-}
 
 void setupBluetooth() {
     String wallName = getWallName();
@@ -141,7 +188,7 @@ void setupBluetooth() {
 
 void setupLeds() {
   FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
-  FastLED.setBrightness(getBrightness());
+  setBrightness(getBrightness());
 
   // Shut down leds on startup
   for (int i=0; i<NUM_LEDS; i++) {
@@ -158,4 +205,21 @@ void setup() {
 
 void loop() {
     delay(20);
+}
+
+
+String getBluetoothMACAddress() {
+  const uint8_t* btMacAddress = esp_bt_dev_get_address();
+  String macStr = "";
+
+  for (int i = 0; i < 6; i++) {
+    // Convert each byte to a two-digit hexadecimal string
+    if (btMacAddress[i] < 0x10) macStr += "0";  // Add leading zero if necessary
+    macStr += String(btMacAddress[i], HEX);
+
+    if (i < 5) macStr += ":";  // Add colon separator between bytes
+  }
+
+  macStr.toUpperCase();  // Convert to uppercase for readability
+  return macStr;
 }

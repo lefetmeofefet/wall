@@ -31,10 +31,14 @@ async function connectToWall(device) {
         const messageString = decoder.decode(event.target.value)
         console.log('Received:', messageString)
         let message = JSON.parse(messageString)
-        if (message.wallName != null) {
-            if (receiveWallName != null) {
-                receiveWallName(message.wallName)
+        if (message.command === "wallInfo") {
+            if (receiveWallInfo != null) {
+                receiveWallInfo(message)
             }
+        } else if (message.command === "killPlayer") {
+            window.onKillPlayer && window.onKillPlayer(message.color)
+        } else if (message.command === "playerAteApple") {
+            window.onPlayerAteApple && window.onPlayerAteApple(message.color)
         }
     })
     await characteristic.startNotifications()
@@ -43,14 +47,18 @@ async function connectToWall(device) {
     // await server.disconnect()
 }
 
-async function sendBTMessage(message) {
+// In bluetooth we must send messages sequentially otherwise we get bugs, so we implement a queue
+const messageQueue = []
+
+async function sendBTMessageFromQueue(message) {
     try {
         const encoder = new TextEncoder()
-        await characteristic.writeValue(encoder.encode(JSON.stringify(message)))
         console.log("Sending to esp: ", message)
-    } catch(e) {
-        console.log("Error sending via BT: ", e)
-        showToast(`Error sending Bluetooth message: ${e.toString()}`)
+        await characteristic.writeValue(encoder.encode(JSON.stringify(message)))
+    } catch (e) {
+        console.log("Error sending bluetooth message: ", {e})
+        console.error(e)
+        showToast(`Error sending Bluetooth message: ${e.toString()}`, {error: true})
         if (e.code === 9) {
             // "GATT operation failed for unknown reason."
         } else if (e.code === 19) {
@@ -61,6 +69,32 @@ async function sendBTMessage(message) {
     }
 }
 
+let consuming = false
+
+async function consumeQueue() {
+    if (consuming) {
+        return
+    }
+    consuming = true
+    try {
+        while (messageQueue.length > 0) {
+            let {message, resolve} = messageQueue.shift()
+            await sendBTMessageFromQueue(message)
+            resolve()
+        }
+    } finally {
+        consuming = false
+    }
+}
+
+function sendBTMessage(message) {
+    let btMessagePromise
+    let promise = new Promise(resolve => btMessagePromise = resolve)
+    messageQueue.push({message, resolve: btMessagePromise})
+    consumeQueue()
+    return promise
+}
+
 async function setWallName(wallName) {
     await sendBTMessage({
         command: "setWallName",
@@ -68,13 +102,20 @@ async function setWallName(wallName) {
     })
 }
 
-let receiveWallName
+let receiveWallInfo
 
-async function getWallName() {
+async function getWallInfo() {
     await sendBTMessage({
-        command: "getWallName",
+        command: "getInfo",
     })
-    return new Promise(resolve => receiveWallName = resolve)
+    return new Promise(resolve => receiveWallInfo = resolve)
+}
+
+async function setWallBrightness(brightness) {
+    await sendBTMessage({
+        command: "setBrightness",
+        brightness
+    })
 }
 
 function getLedRGB(isOn, startOrFinishHold) {
@@ -105,6 +146,13 @@ async function highlightRoute(route) {
     })
 }
 
+async function setLeds(ledGroups) {
+    await sendBTMessage({
+        command: "setLeds",
+        leds: ledGroups
+    })
+}
+
 async function clearLeds() {
     await sendBTMessage({
         command: "clearLeds"
@@ -114,6 +162,7 @@ async function clearLeds() {
 async function setHoldState(hold) {
     await sendBTMessage({
         command: "setLed",
+        snakeMode: false,
         led: {
             ...getLedRGB(hold.inRoute, hold.startOrFinishHold),
             i: hold.id
@@ -121,4 +170,22 @@ async function setHoldState(hold) {
     })
 }
 
-export {scanAndConnect, setWallName, highlightRoute, setHoldState, clearLeds, getWallName}
+async function setSnakeModeLed(r, g, b, i) {
+    await sendBTMessage({
+        command: "setLed",
+        snakeMode: true,
+        led: {r, g, b, i}
+    })
+}
+
+export {
+    scanAndConnect,
+    setWallName,
+    highlightRoute,
+    setHoldState,
+    clearLeds,
+    setWallBrightness,
+    getWallInfo,
+    setSnakeModeLed,
+    setLeds
+}

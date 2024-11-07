@@ -98,15 +98,17 @@ app.post('/setRouteStars', async (req, res) => {
 
 let server;
 if (Config.dev) {
-    server = http.createServer(app);
-} else {
+    // We need ssl for locally working with https, otherwise BT doesnt work
     const sslOptions = {
         key: fs.readFileSync(Config.ssl.keyPath),
         cert: fs.readFileSync(Config.ssl.certPath)
     }
     server = https.createServer(sslOptions, app)
+} else {
+    // In prod render.com gives us https
+    server = http.createServer(app);
 }
 
 server.listen(Config.port, () => {
-    console.log(`Wall is UP! ${Config.dev ? 'http' : 'https'}://localhost:${Config.port}`)
+    console.log(`Wall is UP! https://localhost:${Config.port}`)
 })

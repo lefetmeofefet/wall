@@ -75,6 +75,7 @@ createYoffeeElement("routes-list", (props, self) => {
         padding: 20px 5px;
         color: var(--text-color);
         background-color: var(--background-color); 
+        width: max-content;
     }
     
     #settings-container {
@@ -83,12 +84,16 @@ createYoffeeElement("routes-list", (props, self) => {
         align-items: baseline;
     }
     
-    #settings-container > * {
+    #settings-container > .settings-item {
         padding: 10px 20px;
-        justify-content: space-between;
+        justify-content: flex-start;
         display: flex;
         align-items: center;
-        gap: 30px;
+    }
+    
+    #settings-container > .settings-item > x-icon {
+        width: 20px;
+        margin-right: 10px;
     }
     
     #settings-container > x-button {
@@ -217,10 +222,18 @@ ${() => GlobalState.loading ? html()`
     
     <x-dialog id="settings-dialog">
         <div id="settings-container">
-            <x-button onclick=${() => enterConfigureHoldsPage()}>
+            <x-button class="settings-item"
+                      onclick=${() => enterConfigureHoldsPage()}>
+                <x-icon icon="fa fa-hand-rock"></x-icon>
                 Configure Holds
             </x-button>
-            <x-button onclick=${async () => {
+            <x-button class="settings-item"
+                      onclick=${() => console.log("bling bling")}>
+                <x-icon icon="fa fa-file-image"></x-icon>
+                Change wall image
+            </x-button>
+            <x-button class="settings-item"
+                      onclick=${async () => {
                     let brightness = parseInt(prompt("Enter brightness from 0 to 100: "))
                     if (!isNaN(brightness)) {
                         let realBrightness = Math.round((brightness / 100) * 255)
@@ -228,17 +241,24 @@ ${() => GlobalState.loading ? html()`
                         GlobalState.wallBrightness = realBrightness
                     }
                 }}>
+                <x-icon icon="fa fa-lightbulb"></x-icon>
                 Brightness:
-                <div>${() => Math.round((GlobalState.wallBrightness / 255) * 100)}%</div>
+                <div style="margin-left: auto">
+                    ${() => Math.round((GlobalState.wallBrightness / 255) * 100)}%
+                </div>
             </x-button>
-            <x-button id="snakeio"
+            <x-button class="settings-item"
+                      id="snakeio"
                       onclick=${() => snakeMeUp()}>
+                <x-icon icon="fa fa-question"></x-icon>
                 Snake me up
             </x-button>
-            <div id="theme-toggle">
+            <div id="theme-toggle"
+                 class="settings-item">
+                <x-icon icon=${() => GlobalState.darkTheme ? "fa fa-moon" : "fa fa-sun"}></x-icon>
                 <div>Theme:</div>
                 <x-switch value=${() => GlobalState.darkTheme}
-                          style="--circle-size: 20px;"
+                          style="--circle-size: 20px; margin-left: auto; padding-left: 10px;"
                           switched=${() => () => updateTheme(!GlobalState.darkTheme)}>
                      ${() => GlobalState.darkTheme ? "dark" : "light"}
                 </x-switch>

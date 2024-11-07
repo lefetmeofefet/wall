@@ -7,6 +7,7 @@ const GlobalState = {
     loading: true,
     darkTheme: false,
     wallName: null,
+    // wallName: "bling",
     wallBrightness: 120,
     configuringHolds: false,
 

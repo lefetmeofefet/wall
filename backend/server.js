@@ -108,7 +108,7 @@ app.post('/setRouteStars', async (req, res) => {
 //     // In prod render.com gives us https
 //     server = http.createServer(app);
 // }
-let server = http.createServer()
-server.listen(Config.port, () => {
+
+app.listen(Config.port, () => {
     console.log(`Wall is UP! https://localhost:${Config.port}`)
 })

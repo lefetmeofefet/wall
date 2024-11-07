@@ -6,6 +6,9 @@
   "scripts": {
     "backend": "node backend/server.js "
   },
+  "engines": {
+    "node": ">=20.17.0 <21.0.0"
+  },
   "author": "",
   "license": "ISC",
   "description": "",

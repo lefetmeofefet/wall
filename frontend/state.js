@@ -7,8 +7,8 @@ import {enterFullscreen} from "./utilz/fullscreen.js";
 const GlobalState = {
     loading: true,
     darkTheme: false,
-    // wallName: null,
-    wallName: "bling",
+    wallName: null,
+    // wallName: "bling",
     wallBrightness: 120,
     configuringHolds: false,
 

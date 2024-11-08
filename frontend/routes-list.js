@@ -17,6 +17,7 @@ import "./components/x-tag.js"
 import "./components/x-dialog.js"
 import "./components/x-switch.js"
 import {setWallBrightness, setWallName} from "./bluetooth.js";
+import {enterFullscreen, exitFullscreen, isFullScreen} from "./utilz/fullscreen.js";
 
 createYoffeeElement("routes-list", (props, self) => {
     return html(GlobalState)`
@@ -45,6 +46,16 @@ createYoffeeElement("routes-list", (props, self) => {
         border-radius: 1000px;
         color: var(--text-color-weak-1);
         width: 15px;
+        min-width: 15px;
+        height: 30px;
+        background-color: var(--text-color-weak-3);
+    }
+    
+    #header > #search-button {
+        border-radius: 1000px;
+        color: var(--text-color-weak-1);
+        width: 15px;
+        min-width: 15px;
         height: 30px;
         background-color: var(--text-color-weak-3);
     }
@@ -108,7 +119,11 @@ createYoffeeElement("routes-list", (props, self) => {
     #routes-container {
         display: flex;
         flex-direction: column;
-        overflow-y: auto;
+        overflow-y: scroll;
+        padding-bottom: 100px;
+        /*Making the scrollbar far to the right:*/
+        margin-right: -10%; /* Negative margin equal to container's padding */
+        padding-right: calc(10% - 7px); /* Prevents content from being under the scrollbar */
     }
     
     .route {
@@ -118,30 +133,42 @@ createYoffeeElement("routes-list", (props, self) => {
         border-radius: 0;
         color: unset;
         box-shadow: none;
-        min-height: 22px;
+        min-height: 30px;
         --overlay-color: rgb(var(--text-color-rgb), 0.1);
         --ripple-color: rgb(var(--text-color-rgb), 0.3);
     }
     
     .route + .route {
-        border-top: 1px solid #00000020;
+        border-top: 1px solid var(--text-color-weak-3);
+    }
+    
+    .route > .left-side {
+        display: flex;
+        flex-direction: column;
+        margin-right: 10px;
+    }
+    
+    .route > .left-side > .name {
+        
+    }
+    
+    .route > .left-side > .setter {
+        opacity: 0.5;
+        white-space: nowrap;
+        font-size: 14px;
     }
     
     .route > .stars {
         color: #BFA100;
         display: flex;
-        margin-left: 8px;
+        margin-right: 10px;
         font-size: 12px;
-    }
-    
-    .route > .setter {
         margin-left: auto;
-        margin-right: 20px;
-        opacity: 0.5;
     }
     
     .route > .grade {
         margin-right: 10px;
+        width: 21px;
     }
     
     #new-route-button {
@@ -198,6 +225,12 @@ ${() => GlobalState.loading ? html()`
               }}>
         <x-icon icon="fa fa-sync ${() => GlobalState.loading ? "fa-spin" : ""}"></x-icon>
     </x-button>
+    <x-button id="search-button"
+              onclick=${async () => {
+                  console.log("Searching")
+              }}>
+        <x-icon icon="fa fa-search"></x-icon>
+    </x-button>
     <div id="settings-button" 
          style="margin-left: auto;"
          tabindex="0"
@@ -247,12 +280,6 @@ ${() => GlobalState.loading ? html()`
                     ${() => Math.round((GlobalState.wallBrightness / 255) * 100)}%
                 </div>
             </x-button>
-            <x-button class="settings-item"
-                      id="snakeio"
-                      onclick=${() => snakeMeUp()}>
-                <x-icon icon="fa fa-question"></x-icon>
-                Snake me up
-            </x-button>
             <div id="theme-toggle"
                  class="settings-item">
                 <x-icon icon=${() => GlobalState.darkTheme ? "fa fa-moon" : "fa fa-sun"}></x-icon>
@@ -263,6 +290,21 @@ ${() => GlobalState.loading ? html()`
                      ${() => GlobalState.darkTheme ? "dark" : "light"}
                 </x-switch>
             </div>
+            <x-button class="settings-item"
+                      id="fullscreen"
+                      onclick=${() => {
+                          isFullScreen() ? exitFullscreen() : enterFullscreen(); 
+                          self.shadowRoot.querySelector("#settings-dialog").close()
+                      }}>
+                <x-icon icon="fa fa-expand"></x-icon>
+                Toggle fullscreen
+            </x-button>
+            <x-button class="settings-item"
+                      id="snakeio"
+                      onclick=${() => snakeMeUp()}>
+                <x-icon icon="fa fa-question"></x-icon>
+                Snake me up
+            </x-button>
         </div>
     </x-dialog>
 </div>
@@ -273,15 +315,18 @@ ${() => GlobalState.loading ? html()`
     ${() => GlobalState.routes.map(route => html()`
     <x-button class="route" 
               onclick=${() => enterRoutePage(route)}>
-        <div class="name">${() => route.name}</div>
-        ${() => route.stars > 0 ? html()`
+        <div class="left-side">
+            <div class="name">${() => route.name}</div>
+            <div class="setter">${() => route.setter}</div>
+        </div>
+        
+        
         <div class="stars">
-            <x-icon icon="fa fa-star"></x-icon>
+            ${() => route.stars > 0 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
             ${() => route.stars > 1 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
             ${() => route.stars > 2 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
         </div>
-        ` : ""}
-        <div class="setter">${() => route.setter}</div>
+        
         <div class="grade">V${() => route.grade}</div>
     </x-button>
     `)}

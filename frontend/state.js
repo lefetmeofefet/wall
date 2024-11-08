@@ -2,12 +2,13 @@ import {getRoutesAndHolds} from "./api.js";
 import {getUrlParams, registerUrlListener, updateUrlParams} from "./utilz/url-utilz.js";
 import {clearLeds, highlightRoute} from "./bluetooth.js";
 import {showToast} from "./utilz/toaster.js";
+import {enterFullscreen} from "./utilz/fullscreen.js";
 
 const GlobalState = {
     loading: true,
     darkTheme: false,
-    wallName: null,
-    // wallName: "bling",
+    // wallName: null,
+    wallName: "bling",
     wallBrightness: 120,
     configuringHolds: false,
 
@@ -24,7 +25,6 @@ const GlobalState = {
     routes: []
 };
 window.state = GlobalState
-
 
 const LOCALSTORAGE_DARK_THEME_KEY = "darkTheme"
 

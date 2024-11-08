@@ -187,5 +187,6 @@ export {
     setWallBrightness,
     getWallInfo,
     setSnakeModeLed,
-    setLeds
+    setLeds,
+    messageQueue
 }

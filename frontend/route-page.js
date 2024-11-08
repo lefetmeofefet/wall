@@ -7,7 +7,6 @@ import * as api from "./api.js";
 import {
     addHoldToRoute,
     createHold,
-    getHolds,
     moveHold,
     removeHoldFromRoute,
     setRouteStars,
@@ -125,6 +124,7 @@ createYoffeeElement("route-page", (props, self) => {
         if (state.editMode && GlobalState.selectedRoute != null) {
             hold.inRoute = !hold.inRoute
             hold.startOrFinishHold = false
+            await setHoldState(hold)
             if (hold.inRoute) {
                 await addHoldToRoute(hold.id, GlobalState.selectedRoute.id)
                 GlobalState.selectedRoute.holds.push({id: hold.id})
@@ -132,7 +132,6 @@ createYoffeeElement("route-page", (props, self) => {
                 await removeHoldFromRoute(hold.id, GlobalState.selectedRoute.id)
                 GlobalState.selectedRoute.holds = GlobalState.selectedRoute.holds.filter(h => h.id !== hold.id)
             }
-            await setHoldState(hold)
         }
     }
 
@@ -149,14 +148,15 @@ createYoffeeElement("route-page", (props, self) => {
         }
 
         if (state.editMode && GlobalState.selectedRoute != null) {
+            hold.inRoute = true
+            hold.startOrFinishHold = true
+            await setHoldState(hold)
+
             if (hold.inRoute) {
                 await removeHoldFromRoute(hold.id, GlobalState.selectedRoute.id)
             }
             await addHoldToRoute(hold.id, GlobalState.selectedRoute.id, true)
             GlobalState.selectedRoute.holds.push({id: hold.id, startOrFinishHold: true})
-            hold.inRoute = true
-            hold.startOrFinishHold = true
-            await setHoldState(hold)
         }
     }
 
@@ -270,7 +270,7 @@ createYoffeeElement("route-page", (props, self) => {
     }
     
     #edit-button {
-        right: calc(10% + 75px);
+        right: 10%;
         background-color: var(--text-color-weak-1);
     }
     
@@ -279,8 +279,9 @@ createYoffeeElement("route-page", (props, self) => {
     }
     
     #star-button {
-        left: calc(10% + 75px);
+        left: 50%;
         background-color: var(--text-color-weak-1);
+        transform: translate(-50%, 0);
     }
     
     #star-button[active] {
@@ -326,20 +327,18 @@ ${() => GlobalState.loading ? html()`
     <div id="inputs-container">
         <text-input id="route-name-input"
                     class="title-text header-input"
-                    value=${GlobalState.selectedRoute?.name || GlobalState.wallName}
+                    value=${() => GlobalState.selectedRoute?.name || GlobalState.wallName}
                     changed=${() => () => saveRoute()}
                     submitted=${() => () => console.log("Submitted.")}
-                    onpointerdown=${e => isMobile && !e.target.selected && e.target.select()}
-                    onpointerup=${e => !isMobile && !e.target.selected && e.target.select()}
+                    onfocus=${e => !e.target.selected && e.target.select()}
         ></text-input>
         ${() => GlobalState.configuringHolds ? "" : html()`
         <text-input id="route-setter-input"
                     class="title-text header-input"
-                    value=${GlobalState.selectedRoute?.setter || "Configuring wall"}
+                    value=${() => GlobalState.selectedRoute?.setter || "Configuring wall"}
                     changed=${() => () => saveRoute()}
                     submitted=${() => () => console.log("Submitted.")}
-                    onpointerdown=${e => isMobile && !e.target.selected && e.target.select()}
-                    onpointerup=${e => !isMobile && !e.target.selected && e.target.select()}
+                    onfocus=${e => !e.target.selected && e.target.select()}
         ></text-input>
         `}
     </div>
@@ -349,11 +348,10 @@ ${() => GlobalState.loading ? html()`
     <text-input id="route-grade-input"
                 type="number"
                 class="title-text header-input"
-                value=${GlobalState.selectedRoute?.grade}
+                value=${() => GlobalState.selectedRoute?.grade}
                 submitted=${() => () => console.log("Submitted.")}
                 changed=${() => () => saveRoute()}
-                onpointerdown=${e => isMobile && !e.target.selected && e.target.select()}
-                onpointerup=${e => !isMobile && !e.target.selected && e.target.select()}
+                onfocus=${e => !e.target.selected && e.target.select()}
     ></text-input>
     `}
 </div>
@@ -380,6 +378,7 @@ ${() => GlobalState.loading ? html()`
     </div>
 </div>
 
+${() => GlobalState.configuringHolds ? html()`
 <x-button id="plus-button"
           onclick=${async () => {
               let {hold} = await createHold()
@@ -388,13 +387,14 @@ ${() => GlobalState.loading ? html()`
           }}>
     <x-icon icon="fa fa-plus"></x-icon>
 </x-button>
+` : ""}
 ${() => GlobalState.configuringHolds ? "" : html()`
 <x-button id="edit-button"
           active=${() => state.editMode}
           onclick=${async () => {
         state.editMode = !state.editMode
         if (state.editMode) {
-            showToast("Click holds to edit the route!")
+            showToast("Click holds to edit the route! long press for start/finish hold")
         }
     }}>
     <x-icon icon="fa fa-edit"></x-icon>

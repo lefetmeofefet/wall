@@ -7,7 +7,7 @@ import "./components/text-input.js"
 import "./components/x-button.js"
 import "./components/x-icon.js"
 import "./components/x-tag.js"
-import {setHoldState, setLeds, setSnakeModeLed} from "./bluetooth.js";
+import {messageQueue, setHoldState, setLeds, setSnakeModeLed} from "./bluetooth.js";
 
 createYoffeeElement("snake-page", (props, self) => {
     let state = {
@@ -60,6 +60,10 @@ createYoffeeElement("snake-page", (props, self) => {
     }
 
     let interval = setInterval(async () => {
+        if (messageQueue.length > 1) {
+            // Don't queue up endless snake moves when the bt connection is slow
+            return
+        }
         let closestHold = null, closestDistance
         for (let hold of GlobalState.holds) {
             for (let xOffset = -maxX; xOffset <= maxX; xOffset += maxX) {

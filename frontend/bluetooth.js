@@ -178,6 +178,14 @@ async function setSnakeModeLed(r, g, b, i) {
     })
 }
 
+setInterval(async () => {
+    if (GlobalState.wallName != null) {
+        await sendBTMessage({
+            command: "keepawife"
+        })
+    }
+}, 5000)
+
 export {
     scanAndConnect,
     setWallName,

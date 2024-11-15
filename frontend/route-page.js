@@ -18,7 +18,10 @@ import {setHoldState} from "./bluetooth.js";
 
 createYoffeeElement("route-page", (props, self) => {
     let state = {
-        editMode: GlobalState.configuringHolds
+        editMode: GlobalState.selectedRoute?.isNew ? true : GlobalState.configuringHolds
+    }
+    if (GlobalState.selectedRoute?.isNew) {
+        GlobalState.selectedRoute.isNew = undefined
     }
 
     const saveRoute = async () => {
@@ -119,6 +122,8 @@ createYoffeeElement("route-page", (props, self) => {
             hold.inRoute = !hold.inRoute
             hold.startOrFinishHold = false
             await setHoldState(hold)
+        } else if (!state.editMode) {
+            showToast("Click the edit button to edit the route, dumbass")
         }
 
         if (state.editMode && GlobalState.selectedRoute != null) {

@@ -335,6 +335,7 @@ ${() => GlobalState.loading ? html()`
 <x-button id="new-route-button" 
           onclick=${async () => {
               let {route} = await createRoute()
+              route.isNew = true
               GlobalState.routes = [...GlobalState.routes, route]
               await enterRoutePage(route)
           }}>

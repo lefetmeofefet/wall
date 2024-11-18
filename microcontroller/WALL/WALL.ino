@@ -8,7 +8,7 @@
 #include <esp_bt_main.h>
 #include <esp_bt_device.h>
 
-#define NUM_LEDS 300
+#define NUM_LEDS 1000
 #define DATA_PIN 19
 
 Preferences preferences;
@@ -146,25 +146,31 @@ void createApple() {
   }
 }
 
-bool deviceConnected = false;
+int devicesConnected = 0;
 class ConnectionCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
-      deviceConnected = true;
+      devicesConnected += 1;
+      delay(100); // NEW TESTING
       BLEDevice::startAdvertising();
+      Serial.println("+++ device connected, started advertising");
     }
 
     void onDisconnect(BLEServer* pServer) {
-      deviceConnected = false;
+      devicesConnected -= 1;
+      delay(100); // NEW TESTING
       BLEDevice::startAdvertising();
+      Serial.println("--- device disconnected, started advertising");
     }
 };
 
 void setupBluetooth() {
     String wallName = getWallName();
     BLEDevice::init(wallName);
+    BLEDevice::setTxPower(BLE_PWR_LEVEL_P9);  // Max bluetooth power! // NEW TESTING
 
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new ConnectionCallbacks());
+    pServer->setMaxMTU(512); // Increase max transmission unit (request size) // NEW TESTING
 
     BLEService *pService = pServer->createService(SERVICE_UUID);
     pCharacteristic = pService->createCharacteristic(
@@ -181,8 +187,17 @@ void setupBluetooth() {
     BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
     pAdvertising->setScanResponse(true);
-    // pAdvertising->setMinPreferred(0x06);  // functions that help with iOS issue
-    // pAdvertising->setMinPreferred(0x12);
+
+    // Connection interval - lower is less lag but higher power usage
+    pAdvertising->setMinPreferred(0x06);  // should help with iOS issue (??) // NEW TESTING
+    pAdvertising->setMinPreferred(0x12); // NEW TESTING
+    
+    // Advertising interval
+    pAdvertising->setMinInterval(0x18); // 30ms // NEW TESTING
+    pAdvertising->setMaxInterval(0x30); // 60ms // NEW TESTING
+    // pAdvertising->setMinInterval(0x100); // 160ms
+    // pAdvertising->setMaxInterval(0x200); // 320ms
+
     BLEDevice::startAdvertising();
 }
 
@@ -204,7 +219,12 @@ void setup() {
 }
 
 void loop() {
-    delay(20);
+    BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
+    if (!pAdvertising->isAdvertising()) {
+        pAdvertising->start();
+        Serial.println("Started advertising because no advertising detected");
+    }
+    delay(1000);
 }
 
 

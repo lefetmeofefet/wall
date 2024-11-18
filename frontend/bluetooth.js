@@ -17,6 +17,9 @@ async function scanAndConnect() {
     console.log(`found device `, device)
     console.log(`Connecting to ${device.name}`)
     await connectToWall(device)
+    device.addEventListener('gattserverdisconnected', () => {
+        showToast("Disconnected from bluetooth", {error: true})
+    });
     return device.name
 }
 

@@ -54,8 +54,8 @@ async function getRoutes(whereClause, parameters) {
            route.grade as grade,
            route.setter as setter,
            route.stars as stars,
-           [i IN range(0, size(holds) - 1) | {id: holds[i].id, startOrFinishHold: edges[i].startOrFinishHold}] AS holds
-           //[h IN holds | {id: h.id, startOrFinishHold: e.startOrFinishHold}] AS holds
+           [i IN range(0, size(holds) - 1) | {id: holds[i].id, holdType: edges[i].holdType}] AS holds
+           //[h IN holds | {id: h.id, holdType: e.holdType}] AS holds
     ORDER BY route.createdAt ASC
     `, parameters || {})
 }
@@ -143,11 +143,11 @@ async function deleteHold(id) {
     `, {id})
 }
 
-async function addHoldToRoute(holdId, routeId, startOrFinishHold) {
+async function addHoldToRoute(holdId, routeId, holdType) {
     await queryNeo4j(`
     MATCH (route:Route{id: $routeId}), (hold:Hold{id: $holdId})
-    CREATE (route) -[:has{startOrFinishHold: $startOrFinishHold}]-> (hold)
-    `, {holdId, routeId, startOrFinishHold})
+    CREATE (route) -[:has{holdType: $holdType}]-> (hold)
+    `, {holdId, routeId, holdType})
 }
 
 async function removeHoldFromRoute(holdId, routeId) {

@@ -1,4 +1,4 @@
-import {YoffeeElement, createYoffeeElement, html} from "../libs/yoffee/yoffee.min.js";
+import {YoffeeElement, createYoffeeElement, html} from "../../libs/yoffee/yoffee.min.js";
 import "./x-button.js"
 import "./x-icon.js"
 

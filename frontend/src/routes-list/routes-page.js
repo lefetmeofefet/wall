@@ -1,27 +1,36 @@
-import {html, createYoffeeElement} from "./libs/yoffee/yoffee.min.js"
+import {html, createYoffeeElement} from "../../libs/yoffee/yoffee.min.js"
 import {
     GlobalState,
     enterRoutePage,
     loadRoutesAndHolds,
     updateTheme,
     enterConfigureHoldsPage,
-    snakeMeUp
-} from "./state.js";
-import {createRoute} from "./api.js";
-import "./route-page.js"
-import "./components/text-input.js"
-import "./components/x-loader.js"
-import "./components/x-button.js"
-import "./components/x-icon.js"
-import "./components/x-tag.js"
-import "./components/x-dialog.js"
-import "./components/x-switch.js"
-import {setWallBrightness, setWallName} from "./bluetooth.js";
-import {enterFullscreen, exitFullscreen, isFullScreen} from "./utilz/fullscreen.js";
+    snakeMeUp, setAutoLeds, exitWall
+} from "../state.js";
+import {clearLeds, setWallBrightness, setWallName} from "../bluetooth.js";
+import {enterFullscreen, exitFullscreen, isFullScreen} from "../../utilz/fullscreen.js";
+import {createRoute} from "../api.js";
+import "./routes-list.js"
+import "../components/text-input.js"
+import "../components/x-loader.js"
+import "../components/x-button.js"
+import "../components/x-icon.js"
+import "../components/x-tag.js"
+import "../components/x-dialog.js"
+import "../components/x-switch.js"
 
-createYoffeeElement("routes-list", (props, self) => {
+
+createYoffeeElement("routes-page", (props, self) => {
+    let onScroll = scroll => {
+        window.lastScrollPosition = scroll
+    }
+
+    self.onConnect = () => {
+        self.shadowRoot.querySelector("routes-list").scrollTop = window.lastScrollPosition
+    }
+
     return html(GlobalState)`
-<link href="./style/scrollbar-style.css" rel="stylesheet">
+<link href="../../style/scrollbar-style.css" rel="stylesheet">
 <style>
     :host {
         display: flex;
@@ -115,63 +124,7 @@ createYoffeeElement("routes-list", (props, self) => {
         width: -webkit-fill-available;
     }
     
-    
-    #routes-container {
-        display: flex;
-        flex-direction: column;
-        overflow-y: scroll;
-        padding-bottom: 100px;
-        /*Making the scrollbar far to the right:*/
-        margin-right: -10%; /* Negative margin equal to container's padding */
-        padding-right: calc(10% - 7px); /* Prevents content from being under the scrollbar */
-    }
-    
-    .route {
-        display: flex;
-        align-items: center;
-        padding: 16px 5px;
-        border-radius: 0;
-        color: unset;
-        box-shadow: none;
-        min-height: 30px;
-        --overlay-color: rgb(var(--text-color-rgb), 0.1);
-        --ripple-color: rgb(var(--text-color-rgb), 0.3);
-    }
-    
-    .route + .route {
-        border-top: 1px solid var(--text-color-weak-3);
-    }
-    
-    .route > .left-side {
-        display: flex;
-        flex-direction: column;
-        margin-right: 10px;
-    }
-    
-    .route > .left-side > .name {
-        
-    }
-    
-    .route > .left-side > .setter {
-        opacity: 0.5;
-        white-space: nowrap;
-        font-size: 14px;
-    }
-    
-    .route > .stars {
-        color: #BFA100;
-        display: flex;
-        margin-right: 10px;
-        font-size: 12px;
-        margin-left: auto;
-    }
-    
-    .route > .grade {
-        margin-right: 10px;
-        width: 21px;
-    }
-    
-    #new-route-button {
+    #new-route-button, #clear-leds-button {
         border-radius: 1000px;
         position: fixed;
         right: 13%;
@@ -180,6 +133,23 @@ createYoffeeElement("routes-list", (props, self) => {
         width: 30px;
         height: 30px;
         background-color: var(--secondary-color);
+    }
+    
+    #clear-leds-button {
+        background-color: var(--text-color-weak-3);
+        right: calc(13% + 75px);
+        font-size: 20px;
+    }
+    
+    #slash-div {
+        position: absolute;
+        margin-left: 1px;
+        margin-bottom: 0px;
+        background-color: var(--text-color);
+        width: 26px;
+        height: 2px;
+        transform: rotate(45deg);
+        border-bottom: 2px solid var(--background-color);
     }
 
 </style>
@@ -209,26 +179,26 @@ ${() => GlobalState.loading ? html()`
 <div id="header">
     <div id="title"
          onclick=${async () => {
-            let newWallName = prompt("What would you like to call your wall?")
-            if (newWallName != null) {
-                GlobalState.loading = true
-                await setWallName(newWallName)
-                GlobalState.wallName = newWallName
-                GlobalState.loading = false
-            }
-        }}>
-        ${() => GlobalState.wallName}
+        let newWallName = prompt("What would you like to call your wall?")
+        if (newWallName != null) {
+            GlobalState.loading = true
+            await setWallName(newWallName)
+            GlobalState.selectedWall.name = newWallName
+            GlobalState.loading = false
+        }
+    }}>
+        ${() => GlobalState.selectedWall?.name}
     </div>
     <x-button id="refresh-button"
               onclick=${async () => {
-                  await loadRoutesAndHolds()
-              }}>
+        await loadRoutesAndHolds()
+    }}>
         <x-icon icon="fa fa-sync ${() => GlobalState.loading ? "fa-spin" : ""}"></x-icon>
     </x-button>
     <x-button id="search-button"
               onclick=${async () => {
-                  console.log("Searching")
-              }}>
+        console.log("Searching")
+    }}>
         <x-icon icon="fa fa-search"></x-icon>
     </x-button>
     <div id="settings-button" 
@@ -236,18 +206,17 @@ ${() => GlobalState.loading ? html()`
          tabindex="0"
          onkeydown=${() => e => e.stopPropagation()}
          onmousedown=${() => () => {
-            let _dropdown = self.shadowRoot.querySelector("#settings-dialog")
-            let _button = self.shadowRoot.querySelector("#settings-button")
-            if (_dropdown.isOpen()) {
-                _dropdown.close()
-            }
-            else {
-                _dropdown.open({
-                    x: _button.offsetLeft,
-                    y: _button.offsetTop + _button.offsetHeight + 5
-                }, true)
-            }
-        }}
+        let _dropdown = self.shadowRoot.querySelector("#settings-dialog")
+        let _button = self.shadowRoot.querySelector("#settings-button")
+        if (_dropdown.isOpen()) {
+            _dropdown.close()
+        } else {
+            _dropdown.open({
+                x: _button.offsetLeft,
+                y: _button.offsetTop + _button.offsetHeight + 5
+            }, true)
+        }
+    }}
          onblur=${() => requestAnimationFrame(() => self.shadowRoot.querySelector("#settings-dialog").close())}>
         <x-icon icon="fa fa-bars"></x-icon>
     <!--    <x-icon icon="fa fa-ellipsis-v"></x-icon>-->
@@ -267,17 +236,17 @@ ${() => GlobalState.loading ? html()`
             </x-button>
             <x-button class="settings-item"
                       onclick=${async () => {
-                    let brightness = parseInt(prompt("Enter brightness from 0 to 100: "))
-                    if (!isNaN(brightness)) {
-                        let realBrightness = Math.round((brightness / 100) * 255)
-                        await setWallBrightness(realBrightness)
-                        GlobalState.wallBrightness = realBrightness
-                    }
-                }}>
+                          let brightness = parseInt(prompt("Enter brightness from 0 to 100: "))
+                          if (!isNaN(brightness)) {
+                              let realBrightness = Math.round((brightness / 100) * 255)
+                              await setWallBrightness(realBrightness)
+                              GlobalState.selectedWall.brightness = realBrightness
+                          }
+                      }}>
                 <x-icon icon="fa fa-lightbulb"></x-icon>
                 Brightness:
                 <div style="margin-left: auto">
-                    ${() => Math.round((GlobalState.wallBrightness / 255) * 100)}%
+                    ${() => Math.round((GlobalState.selectedWall?.brightness / 255) * 100)}%
                 </div>
             </x-button>
             <div id="theme-toggle"
@@ -293,11 +262,20 @@ ${() => GlobalState.loading ? html()`
             <x-button class="settings-item"
                       id="fullscreen"
                       onclick=${() => {
-                          isFullScreen() ? exitFullscreen() : enterFullscreen(); 
+                          isFullScreen() ? exitFullscreen() : enterFullscreen();
                           self.shadowRoot.querySelector("#settings-dialog").close()
                       }}>
                 <x-icon icon="fa fa-expand"></x-icon>
                 Toggle fullscreen
+            </x-button>
+            <x-button class="settings-item"
+                      id="auto-leds">
+                <x-icon icon="fa fa-bolt"></x-icon>
+                <div>Auto leds</div>
+                <x-switch value=${() => GlobalState.autoLeds}
+                          style="--circle-size: 20px; margin-left: auto; padding-left: 10px;"
+                          switched=${() => () => setAutoLeds(!GlobalState.autoLeds)}>
+                </x-switch>
             </x-button>
             <x-button class="settings-item"
                       id="snakeio"
@@ -305,41 +283,37 @@ ${() => GlobalState.loading ? html()`
                 <x-icon icon="fa fa-question"></x-icon>
                 Snake me up
             </x-button>
+            <x-button class="settings-item"
+                      id="exit-wall"
+                      onclick=${() => exitWall()}>
+                <x-icon icon="fa fa-caret-left"></x-icon>
+                Exit wall
+            </x-button>
         </div>
     </x-dialog>
 </div>
 
 <div id="filters-container">
 </div>
-<div id="routes-container">
-    ${() => GlobalState.routes.map(route => html()`
-    <x-button class="route" 
-              onclick=${() => enterRoutePage(route)}>
-        <div class="left-side">
-            <div class="name">${() => route.name}</div>
-            <div class="setter">${() => route.setter}</div>
-        </div>
-        
-        
-        <div class="stars">
-            ${() => route.stars > 0 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
-            ${() => route.stars > 1 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
-            ${() => route.stars > 2 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
-        </div>
-        
-        <div class="grade">V${() => route.grade}</div>
-    </x-button>
-    `)}
-</div>
+
+<routes-list onscroll=${e => onScroll(e.target.scrollTop)}></routes-list>
 
 <x-button id="new-route-button" 
           onclick=${async () => {
-              let {route} = await createRoute()
-              route.isNew = true
-              GlobalState.routes = [...GlobalState.routes, route]
-              await enterRoutePage(route)
-          }}>
+        let {route} = await createRoute()
+        route.isNew = true
+        GlobalState.routes = [...GlobalState.routes, route]
+        await enterRoutePage(route)
+    }}>
     <x-icon icon="fa fa-plus"></x-icon>
+</x-button>
+
+<x-button id="clear-leds-button" 
+          onclick=${async () => {
+        await clearLeds()
+    }}>
+    <x-icon icon="fa fa-lightbulb"></x-icon>
+    <div id="slash-div"></div>
 </x-button>
 `
 });

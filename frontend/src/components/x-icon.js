@@ -1,4 +1,4 @@
-import {YoffeeElement, createYoffeeElement, html} from "../libs/yoffee/yoffee.min.js";
+import {YoffeeElement, createYoffeeElement, html} from "../../libs/yoffee/yoffee.min.js";
 
 
 customElements.define("x-icon", class extends YoffeeElement {

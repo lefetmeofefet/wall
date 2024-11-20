@@ -1,5 +1,5 @@
 import {GlobalState} from "./state.js";
-import {showToast} from "./utilz/toaster.js";
+import {showToast} from "../utilz/toaster.js";
 
 async function post(url, data) {
     GlobalState.loading = true
@@ -57,11 +57,11 @@ async function deleteHold(id) {
     return await post("/deleteHold", {id})
 }
 
-async function addHoldToRoute(holdId, routeId, startOrFinishHold) {
+async function addHoldToRoute(holdId, routeId, holdType) {
     return await post("/addHoldToRoute", {
         holdId,
         routeId,
-        startOrFinishHold: startOrFinishHold || false
+        holdType: holdType || ""
     })
 }
 

@@ -1,9 +1,9 @@
-import {html, createYoffeeElement} from "./libs/yoffee/yoffee.min.js"
+import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
 import {GlobalState, exitRoutePage, unselectHolds} from "./state.js";
 import "./connect-page.js"
 import "./snake-page.js"
-import "./route-page.js"
-import "./routes-list.js"
+import "./single-route-page.js"
+import "./routes-list/routes-page.js"
 import "./components/text-input.js"
 import "./components/x-button.js"
 import "./components/x-icon.js"
@@ -25,16 +25,16 @@ createYoffeeElement("wall-app", () => {
 
 </style>
 ${() => {
-    if (GlobalState.wallName == null) {
+    if (GlobalState.selectedWall == null) {
         return html()`<connect-page></connect-page>`
     } else if (GlobalState.selectedRoute != null) {
-        return html()`<route-page route=${() => GlobalState.selectedRoute}></route-page>`
+        return html()`<single-route-page route=${() => GlobalState.selectedRoute}></single-route-page>`
     } else if (GlobalState.configuringHolds) {
-        return html()`<route-page></route-page>`
+        return html()`<single-route-page></single-route-page>`
     } else if (GlobalState.isSnaking) {
         return html()`<snake-page></snake-page>`
     } else {
-        return html()`<routes-list></routes-list>`
+        return html()`<routes-page></routes-page>`
     }
 }}
 `

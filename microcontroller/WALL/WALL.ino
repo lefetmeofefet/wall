@@ -25,7 +25,7 @@ int appleIndex = -1;
 
 String getWallName() {
   preferences.begin("settings", true);  // Open in read-only mode
-  String defaultName = "WALL";
+  String defaultName = "WHOL";
   String value = preferences.getString("wallName", defaultName);
   preferences.end();
   return value;
@@ -166,11 +166,15 @@ class ConnectionCallbacks: public BLEServerCallbacks {
 void setupBluetooth() {
     String wallName = getWallName();
     BLEDevice::init(wallName);
-    BLEDevice::setTxPower(BLE_PWR_LEVEL_P9);  // Max bluetooth power! // NEW TESTING
+    BLEDevice::setMTU(256); // Increase max transmission unit (request size) // NEW TESTING
+    
+    // Max bluetooth power! // NEW TESTING
+    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT, ESP_PWR_LVL_P9); 
+    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, ESP_PWR_LVL_P9);
+    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_SCAN ,ESP_PWR_LVL_P9);
 
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new ConnectionCallbacks());
-    pServer->setMaxMTU(512); // Increase max transmission unit (request size) // NEW TESTING
 
     BLEService *pService = pServer->createService(SERVICE_UUID);
     pCharacteristic = pService->createCharacteristic(
@@ -192,11 +196,11 @@ void setupBluetooth() {
     pAdvertising->setMinPreferred(0x06);  // should help with iOS issue (??) // NEW TESTING
     pAdvertising->setMinPreferred(0x12); // NEW TESTING
     
-    // Advertising interval
-    pAdvertising->setMinInterval(0x18); // 30ms // NEW TESTING
-    pAdvertising->setMaxInterval(0x30); // 60ms // NEW TESTING
-    // pAdvertising->setMinInterval(0x100); // 160ms
-    // pAdvertising->setMaxInterval(0x200); // 320ms
+    // Advertising interval - same as above
+    //pAdvertising->setMinInterval(0x18); // 30ms
+    //pAdvertising->setMaxInterval(0x30); // 60ms
+    //pAdvertising->setMinInterval(0x100); // 160ms
+    //pAdvertising->setMaxInterval(0x200); // 320ms
 
     BLEDevice::startAdvertising();
 }
@@ -219,11 +223,6 @@ void setup() {
 }
 
 void loop() {
-    BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
-    if (!pAdvertising->isAdvertising()) {
-        pAdvertising->start();
-        Serial.println("Started advertising because no advertising detected");
-    }
     delay(1000);
 }
 

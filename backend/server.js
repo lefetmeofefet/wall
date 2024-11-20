@@ -14,7 +14,7 @@ import {
     moveHold, removeHoldFromRoute, setRouteStars,
     updateRoute
 } from "./db.js";
-import {clearLEDs, sendDataToArduino, setLEDs} from "./arduino.js";
+// import {clearLEDs, sendDataToArduino, setLEDs} from "./arduino.js";
 
 const app = express()
 
@@ -78,8 +78,8 @@ app.post('/deleteHold', async (req, res) => {
 })
 
 app.post('/addHoldToRoute', async (req, res) => {
-    const {holdId, routeId, startOrFinishHold} = req.body
-    await addHoldToRoute(holdId, routeId, startOrFinishHold)
+    const {holdId, routeId, holdType} = req.body
+    await addHoldToRoute(holdId, routeId, holdType)
     res.json({status: 'success'})
 })
 
@@ -95,21 +95,6 @@ app.post('/setRouteStars', async (req, res) => {
     res.json({status: 'success'})
 })
 
-
-// let server;
-// if (Config.dev) {
-//     // We need ssl for locally working with https, otherwise BT doesnt work
-//     const sslOptions = {
-//         key: fs.readFileSync(Config.ssl.keyPath),
-//         cert: fs.readFileSync(Config.ssl.certPath)
-//     }
-//     server = https.createServer(sslOptions, app)
-// } else {
-//     // In prod render.com gives us https
-//     server = app
-// }
-
-
 app.listen(Config.port, () => {
-    console.log(`Wall is UP! https://localhost:${Config.port}`)
+    console.log(`WHOL is UP! https://localhost:${Config.port}`)
 })

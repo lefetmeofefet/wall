@@ -1,4 +1,4 @@
-import {html, createYoffeeElement} from "./libs/yoffee/yoffee.min.js"
+import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
 import {exitRoutePage, GlobalState, loadRoutesAndHolds} from "./state.js"
 import "./components/text-input.js"
 import "./components/x-button.js"
@@ -12,13 +12,14 @@ import {
     setRouteStars,
     updateRoute
 } from "./api.js";
-import {showToast} from "./utilz/toaster.js";
-import {setHoldState} from "./bluetooth.js";
+import {showToast} from "../utilz/toaster.js";
+import {clearLeds, highlightRoute, setHoldState} from "./bluetooth.js";
 
 
-createYoffeeElement("route-page", (props, self) => {
+createYoffeeElement("single-route-page", (props, self) => {
     let state = {
-        editMode: GlobalState.selectedRoute?.isNew ? true : GlobalState.configuringHolds
+        editMode: GlobalState.selectedRoute?.isNew ? true : GlobalState.configuringHolds,
+        highlightingRoute: GlobalState.autoLeds
     }
     if (GlobalState.selectedRoute?.isNew) {
         GlobalState.selectedRoute.isNew = undefined
@@ -47,10 +48,10 @@ createYoffeeElement("route-page", (props, self) => {
 
     // set holds in route
     if (GlobalState.selectedRoute != null) {
-        for (let {id, startOrFinishHold} of GlobalState.selectedRoute.holds) {
+        for (let {id, holdType} of GlobalState.selectedRoute.holds) {
             let hold = GlobalState.holdMapping.get(id)
             hold.inRoute = true
-            hold.startOrFinishHold = startOrFinishHold
+            hold.holdType = holdType
         }
     }
 
@@ -120,16 +121,20 @@ createYoffeeElement("route-page", (props, self) => {
 
         if (GlobalState.configuringHolds) {
             hold.inRoute = !hold.inRoute
-            hold.startOrFinishHold = false
-            await setHoldState(hold)
+            hold.holdType = ""
+            if (GlobalState.autoLeds || state.highlightingRoute) {
+                await setHoldState(hold)
+            }
         } else if (!state.editMode) {
             showToast("Click the edit button to edit the route, dumbass")
         }
 
         if (state.editMode && GlobalState.selectedRoute != null) {
             hold.inRoute = !hold.inRoute
-            hold.startOrFinishHold = false
-            await setHoldState(hold)
+            hold.holdType = ""
+            if (GlobalState.autoLeds || state.highlightingRoute) {
+                await setHoldState(hold)
+            }
             if (hold.inRoute) {
                 await addHoldToRoute(hold.id, GlobalState.selectedRoute.id)
                 GlobalState.selectedRoute.holds.push({id: hold.id})
@@ -147,21 +152,30 @@ createYoffeeElement("route-page", (props, self) => {
         if (GlobalState.configuringHolds) {
             if (!hold.inRoute) {
                 hold.inRoute = true
-                hold.startOrFinishHold = true
+                hold.holdType = ""
                 await setHoldState(hold)
             }
         }
 
         if (state.editMode && GlobalState.selectedRoute != null) {
             hold.inRoute = true
-            hold.startOrFinishHold = true
-            await setHoldState(hold)
+            // Cycle between start and finish holds on long press
+            if (hold.holdType === "start") {
+                hold.holdType = "finish"
+            } else {
+                hold.holdType = "start"
+            }
 
+            if (GlobalState.autoLeds || state.highlightingRoute) {
+                await setHoldState(hold)
+            }
+
+            // If its in route, we remove it to add it again with a different holdType
             if (hold.inRoute) {
                 await removeHoldFromRoute(hold.id, GlobalState.selectedRoute.id)
             }
-            await addHoldToRoute(hold.id, GlobalState.selectedRoute.id, true)
-            GlobalState.selectedRoute.holds.push({id: hold.id, startOrFinishHold: true})
+            await addHoldToRoute(hold.id, GlobalState.selectedRoute.id, hold.holdType)
+            GlobalState.selectedRoute.holds.push({id: hold.id, holdType: hold.holdType})
         }
     }
 
@@ -237,8 +251,8 @@ createYoffeeElement("route-page", (props, self) => {
         display: flex;
         height: inherit;
         position: relative;
-        margin-bottom: 70px;
-        background-image: url("./res/wall.jpg");
+        /*margin-bottom: 70px;*/
+        background-image: url("../res/wall.jpg");
         background-size: 100% 100%; /* Stretches the image to fit the div exactly */
         background-position: center; /* Centers the image in the div */
         background-repeat: no-repeat; /* Prevents tiling */
@@ -256,47 +270,72 @@ createYoffeeElement("route-page", (props, self) => {
         position: absolute;
         width: 24px;
         height: 24px;
-        background-color: #00000060;
+        background-color: #00000040;
         border-radius: 100px;
         color: var(--text-color-on-secondary);
         transform: translate(-50%, 50%);
-        opacity: 0.6;
+        /*opacity: 0.6;*/
+        border: 3px solid transparent;
     }
     
-    #plus-button, #edit-button, #star-button, #delete-button {
+    #holds-container > .hold[data-hold-type=hold] {
+        border-color: var(--secondary-color);
+        width: 34px;
+        height: 34px;
+    }
+    
+    #holds-container > .hold[data-hold-type=start] {
+        border-color: #20ff30;
+        width: 34px;
+        height: 34px;
+    }
+    
+    #holds-container > .hold[data-hold-type=finish] {
+        border-color: #fa3344;
+        width: 34px;
+        height: 34px;
+    }
+    
+    #bottom-buttons {
+        display: flex;
+        align-items: center;
+        justify-content: space-evenly;
+        height: 70px;
+    }
+    
+    #bottom-buttons > x-button {
         border-radius: 1000px;
-        position: fixed;
-        right: 10%;
-        bottom: 15px;
         color: var(--text-color-on-secondary);
+        background-color: var(--text-color-weak-1);
         width: 30px;
         height: 30px;
+    }
+    
+    #bottom-buttons > #delete-button {
+        background-color: #fa3344;
+    }
+    
+    #bottom-buttons > #edit-button[active] {
         background-color: var(--secondary-color);
     }
     
-    #edit-button {
-        right: 10%;
-        background-color: var(--text-color-weak-1);
+    #bottom-buttons > #star-button {
+        /*transform: translate(-50%, 0);*/
     }
     
-    #edit-button[active] {
-        background-color: var(--secondary-color);
-    }
-    
-    #star-button {
-        left: 50%;
-        background-color: var(--text-color-weak-1);
-        transform: translate(-50%, 0);
-    }
-    
-    #star-button[active] {
+    #bottom-buttons > #star-button[active] {
         background-color: #BFA100;
     }
     
-    #delete-button {
-        left: 10%;
-        color: var(--text-color-on-secondary);
-        background-color: #fa3344;
+    #bottom-buttons > #turn-on-leds-button {
+    }
+    
+    #bottom-buttons > #turn-on-leds-button[active] {
+        background-color: var(--secondary-color);
+    }
+    
+    #plus-button {
+        background-color: var(--secondary-color);
     }
 </style>
 
@@ -332,7 +371,7 @@ ${() => GlobalState.loading ? html()`
     <div id="inputs-container">
         <text-input id="route-name-input"
                     class="title-text header-input"
-                    value=${() => GlobalState.selectedRoute?.name || GlobalState.wallName}
+                    value=${() => GlobalState.selectedRoute?.name || GlobalState.selectedWall.name}
                     changed=${() => () => saveRoute()}
                     submitted=${() => () => console.log("Submitted.")}
                     onfocus=${e => !e.target.selected && e.target.select()}
@@ -364,18 +403,19 @@ ${() => GlobalState.loading ? html()`
     <div id="holds-container">
         ${() => GlobalState.holds.map(hold => html(hold)`
         <div class="hold"
+             data-hold-type=${hold.inRoute ? (hold.holdType === "" ? "hold" : hold.holdType) : ""}
              style="${() => `
                 left: ${hold.x * 100}%; 
                 bottom: ${hold.y * 100}%; 
-                ${hold.inRoute ? `background-color: ${hold.startOrFinishHold ? "#20ff30" : "var(--secondary-color)"};` : ""}`}"
+                `}"
              onpointerdown=${e => {
-            dragContainer = self.shadowRoot.querySelector("#holds-container")
-            clickedHold = hold
-            dragStartPosition = {x: e.pageX, y: e.pageY}
-            e.stopPropagation()
-            e.preventDefault()
-            longPressTimer = setTimeout(() => holdLongPressed(hold), LONG_PRESS_TIME)
-        }}
+        dragContainer = self.shadowRoot.querySelector("#holds-container")
+        clickedHold = hold
+        dragStartPosition = {x: e.pageX, y: e.pageY}
+        e.stopPropagation()
+        e.preventDefault()
+        longPressTimer = setTimeout(() => holdLongPressed(hold), LONG_PRESS_TIME)
+    }}
              
              >
         </div>
@@ -383,52 +423,76 @@ ${() => GlobalState.loading ? html()`
     </div>
 </div>
 
-${() => GlobalState.configuringHolds ? html()`
-<x-button id="plus-button"
-          onclick=${async () => {
-              let {hold} = await createHold()
-              GlobalState.holdMapping.set(hold.id, hold)
-              GlobalState.holds = [...GlobalState.holds, hold]
-          }}>
-    <x-icon icon="fa fa-plus"></x-icon>
-</x-button>
-` : ""}
-${() => GlobalState.configuringHolds ? "" : html()`
-<x-button id="edit-button"
-          active=${() => state.editMode}
-          onclick=${async () => {
-        state.editMode = !state.editMode
-        if (state.editMode) {
-            showToast("Click holds to edit the route! long press for start/finish hold")
-        }
-    }}>
-    <x-icon icon="fa fa-edit"></x-icon>
-</x-button>
-<x-button id="delete-button"
-          onclick=${async () => {
-        if (confirm(`U gonna destroy ${GlobalState.selectedRoute.name}. Proceed??`)) {
-            await api.deleteRoute(GlobalState.selectedRoute.id)
-            await loadRoutesAndHolds()
-            await exitRoutePage()
-        }
-    }}>
-    <x-icon icon="fa fa-trash"></x-icon>
-</x-button>
-<x-button id="star-button"
-          active=${() => GlobalState.selectedRoute?.stars > 0}
-          onclick=${async () => {
-        let stars = (GlobalState.selectedRoute.stars || 0) + 1
-        if (stars > 3) {
-            stars = 0
-        }
-        GlobalState.selectedRoute.stars = stars
-        await setRouteStars(GlobalState.selectedRoute.id, stars)
-    }}>
-    <x-icon icon="fa fa-star"></x-icon>
-    ${() => GlobalState.selectedRoute?.stars > 1 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
-    ${() => GlobalState.selectedRoute?.stars > 2 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
-</x-button>
-`}
-
+<div id="bottom-buttons">
+    ${() => !GlobalState.configuringHolds && html()`
+    <x-button id="delete-button"
+              onclick=${async () => {
+                  if (confirm(`U gonna destroy ${GlobalState.selectedRoute.name}. Proceed??`)) {
+                      await api.deleteRoute(GlobalState.selectedRoute.id)
+                      await loadRoutesAndHolds()
+                      await exitRoutePage()
+                  }
+              }}>
+        <x-icon icon="fa fa-trash"></x-icon>
+    </x-button>
+    `}
+    
+    ${() => !GlobalState.configuringHolds && html()`
+    <x-button id="edit-button"
+              active=${() => state.editMode}
+              onclick=${async () => {
+                  state.editMode = !state.editMode
+                  if (state.editMode) {
+                      showToast("Click holds to edit the route! long press to cycle start/finish hold")
+                  }
+              }}>
+        <x-icon icon="fa fa-edit"></x-icon>
+    </x-button>
+    `}
+    
+    ${() => !GlobalState.configuringHolds && html()`
+    <x-button id="star-button"
+              active=${() => GlobalState.selectedRoute?.stars > 0}
+              onclick=${async () => {
+                  let stars = (GlobalState.selectedRoute.stars || 0) + 1
+                  if (stars > 3) {
+                      stars = 0
+                  }
+                  GlobalState.selectedRoute.stars = stars
+                  await setRouteStars(GlobalState.selectedRoute.id, stars)
+              }}>
+        <x-icon icon="fa fa-star"></x-icon>
+        ${() => GlobalState.selectedRoute?.stars > 1 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
+        ${() => GlobalState.selectedRoute?.stars > 2 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
+    </x-button>
+    `}
+    
+    ${() => !GlobalState.configuringHolds && html()`
+    <x-button id="turn-on-leds-button"
+              active=${() => state.highlightingRoute}
+              onclick=${async () => {
+                  if (state.highlightingRoute) {
+                      await clearLeds()
+                  } else {
+                      await highlightRoute(GlobalState.selectedRoute)
+                  }
+                  
+                  state.highlightingRoute = !state.highlightingRoute
+              }}>
+        <x-icon icon="fa fa-lightbulb"></x-icon>
+    </x-button>
+    `}
+    
+    ${() => GlobalState.configuringHolds && html()`
+    <x-button id="plus-button"
+              onclick=${async () => {
+                  let {hold} = await createHold()
+                  GlobalState.holdMapping.set(hold.id, hold)
+                  GlobalState.holds = [...GlobalState.holds, hold]
+              }}>
+        <x-icon icon="fa fa-plus"></x-icon>
+    </x-button>
+    `}
+</div>
 `
 })

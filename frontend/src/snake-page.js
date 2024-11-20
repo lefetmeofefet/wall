@@ -1,8 +1,5 @@
-import {html, createYoffeeElement} from "./libs/yoffee/yoffee.min.js"
+import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
 import {GlobalState} from "./state.js";
-import "./connect-page.js"
-import "./routes-list.js"
-import "./route-page.js"
 import "./components/text-input.js"
 import "./components/x-button.js"
 import "./components/x-icon.js"

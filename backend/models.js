@@ -1,3 +1,15 @@
+class Wall {
+    constructor(id, name, brightness) {
+        this.id = id
+        this.name = name
+        this.brightness = brightness
+    }
+
+    fromDb(dbObject) {
+
+    }
+}
+
 class Route {
     constructor(id, name, grade, setter, holds) {
         this.id = id
@@ -22,7 +34,7 @@ class Hold {
         this.y = y
         this.name = name
         this.inRoute = false
-        this.startOrFinishHold = false
+        this.holdType = ""
     }
 
     fromDb(dbObject) {

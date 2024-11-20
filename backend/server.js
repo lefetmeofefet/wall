@@ -1,7 +1,4 @@
-import http from 'http'
 import express from 'express'
-import https from 'https'
-import fs from 'fs'
 import {Config} from "./config.js"
 import {
     addHoldToRoute,
@@ -10,8 +7,8 @@ import {
     deleteHold,
     deleteRoute,
     getHolds, getRoute,
-    getRoutes,
-    moveHold, removeHoldFromRoute, setRouteStars,
+    getRoutes, getWallImage,
+    moveHold, removeHoldFromRoute, setRouteStars, setWallImage,
     updateRoute
 } from "./db.js";
 // import {clearLEDs, sendDataToArduino, setLEDs} from "./arduino.js";
@@ -19,79 +16,76 @@ import {
 const app = express()
 
 app.use(express.static('frontend'))
-app.use(express.json())
+app.use(express.json({limit: "100mb"}))
 
 app.post('/getRoutesAndHolds', async (req, res) => {
+    const {wallId, includeImage} = req.body
     res.json({
-        routes: await getRoutes(),
-        holds: await getHolds()
+        routes: await getRoutes(wallId),
+        holds: await getHolds(wallId),
+        image: includeImage ? await getWallImage(wallId) : null
     })
 })
 
-app.post('/getRoutes', async (req, res) => {
-    res.json({
-        routes: await getRoutes()
-    })
+app.post('/setWallImage', async (req, res) => {
+    const {wallId, image} = req.body
+    await setWallImage(wallId, image)
+    res.json({status: 'success'})
 })
 
 app.post('/createRoute', async (req, res) => {
-    const {setter} = req.body
+    const {wallId, setter} = req.body
     res.json({
-        route: await createRoute(setter)
+        route: await createRoute(wallId, setter)
     })
 })
 
 app.post('/updateRoute', async (req, res) => {
-    const {id, name, grade, setter} = req.body
-    await updateRoute(id, name, grade, setter)
+    const {wallId, routeId, name, grade, setter} = req.body
+    await updateRoute(wallId, routeId, name, grade, setter)
     res.json({status: 'success'})
 })
 
 app.post('/deleteRoute', async (req, res) => {
-    const {id} = req.body
-    await deleteRoute(id)
+    const {wallId, routeId} = req.body
+    await deleteRoute(wallId, routeId)
     res.json({status: 'success'})
 })
 
-app.post('/getHolds', async (req, res) => {
-    res.json({
-        holds: await getHolds()
-    })
-})
-
 app.post('/createHold', async (req, res) => {
+    const {wallId} = req.body
     res.json({
-        hold: await createHold()
+        hold: await createHold(wallId)
     })
 })
 
 app.post('/moveHold', async (req, res) => {
-    const {id, x, y} = req.body
-    await moveHold(id, x, y)
+    const {wallId, holdId, x, y} = req.body
+    await moveHold(wallId, holdId, x, y)
     res.json({status: 'success'})
 })
 
 app.post('/deleteHold', async (req, res) => {
-    const {id} = req.body
-    await deleteHold(id)
+    const {wallId, holdId} = req.body
+    await deleteHold(wallId, holdId)
     res.json({status: 'success'})
 })
 
 app.post('/addHoldToRoute', async (req, res) => {
-    const {holdId, routeId, holdType} = req.body
-    await addHoldToRoute(holdId, routeId, holdType)
+    const {wallId, holdId, routeId, holdType} = req.body
+    await addHoldToRoute(wallId, holdId, routeId, holdType)
     res.json({status: 'success'})
 })
 
 app.post('/removeHoldFromRoute', async (req, res) => {
-    const {holdId, routeId} = req.body
-    await removeHoldFromRoute(holdId, routeId)
+    const {wallId, holdId, routeId} = req.body
+    await removeHoldFromRoute(wallId, holdId, routeId)
     res.json({status: 'success'})
 })
 
 app.post('/setRouteStars', async (req, res) => {
-    const {id, stars} = req.body
-    await setRouteStars(id, stars)
+    const {wallId, routeId, stars} = req.body
+    await setRouteStars(wallId, routeId, stars)
     res.json({status: 'success'})
 })
 

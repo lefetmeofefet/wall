@@ -9,9 +9,10 @@ function setAutoLeds(autoLeds) {
     localStorage.setItem(LOCALSTORAGE_AUTO_LEDS_KEY, autoLeds ? "true" : "false")
 }
 
+let WallImage = null
 const GlobalState = {
     darkTheme: false,
-    loading: true,
+    loading: false,
     bluetoothConnected: false,
     configuringHolds: false,
     autoLeds: localStorage.getItem(LOCALSTORAGE_AUTO_LEDS_KEY) === "true",  // Automatically light leds when clicking a route
@@ -47,17 +48,19 @@ if (localStorageDarkTheme != null) {
     updateTheme(isUserDarkTheme, true)
 }
 
-async function loadRoutesAndHolds() {
-    let {routes, holds} = await getRoutesAndHolds()
-    GlobalState.routes = routes
-    GlobalState.holds = holds
+async function loadRoutesAndHolds(downloadImage) {
+    let response = await getRoutesAndHolds(downloadImage)
+    GlobalState.routes = response.routes
+    GlobalState.holds = response.holds
+    if (response.image != null) {
+        WallImage = response.image
+    }
+
     GlobalState.holdMapping = new Map()
     for (let hold of GlobalState.holds) {
         GlobalState.holdMapping.set(hold.id, hold)
     }
 }
-
-loadRoutesAndHolds()
 
 /** @param route {Route} */
 async function enterRoutePage(route) {
@@ -69,26 +72,29 @@ async function enterRoutePage(route) {
 }
 
 async function enterConfigureHoldsPage() {
+    await unselectHolds()
+
     GlobalState.configuringHolds = true
     updateUrlParams({configuring: true})  // Important so that clicking "back" won't exit the site
     showToast("Holds are draggable now!")
-    await unselectHolds()
+
     await clearLeds()
 }
 
 async function exitRoutePage() {
     if (GlobalState.configuringHolds) {
         GlobalState.configuringHolds = false
+        await clearLeds()
         updateUrlParams({configuring: undefined})
     } else {
         GlobalState.selectedRoute = null
         updateUrlParams({route: undefined})
+        if (GlobalState.autoLeds) {
+            await clearLeds()
+        }
     }
 
     await unselectHolds()
-    if (GlobalState.autoLeds) {
-        await clearLeds()
-    }
     await loadRoutesAndHolds()
 }
 
@@ -126,6 +132,7 @@ registerUrlListener(() => onBackClicked())
 
 export {
     GlobalState,
+    WallImage,
     exitWall,
     loadRoutesAndHolds,
     enterRoutePage,

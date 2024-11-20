@@ -9,7 +9,7 @@ import {
 } from "../state.js";
 import {clearLeds, setWallBrightness, setWallName} from "../bluetooth.js";
 import {enterFullscreen, exitFullscreen, isFullScreen} from "../../utilz/fullscreen.js";
-import {createRoute} from "../api.js";
+import {createRoute, setWallImage} from "../api.js";
 import "./routes-list.js"
 import "../components/text-input.js"
 import "../components/x-loader.js"
@@ -18,6 +18,7 @@ import "../components/x-icon.js"
 import "../components/x-tag.js"
 import "../components/x-dialog.js"
 import "../components/x-switch.js"
+import {showToast} from "../../utilz/toaster.js";
 
 
 createYoffeeElement("routes-page", (props, self) => {
@@ -27,6 +28,46 @@ createYoffeeElement("routes-page", (props, self) => {
 
     self.onConnect = () => {
         self.shadowRoot.querySelector("routes-list").scrollTop = window.lastScrollPosition
+    }
+
+    function pickFile(onFilePicked) {
+        const inputElemenet = document.createElement('input');
+        inputElemenet.style.display = 'none';
+        inputElemenet.type = 'file';
+        inputElemenet.accept = "image/*"
+
+        inputElemenet.addEventListener('change', () => {
+            if (inputElemenet.files) {
+                onFilePicked(inputElemenet.files[0]);
+            }
+        });
+
+        const teardown = () => {
+            document.body.removeEventListener('focus', teardown, true);
+            setTimeout(() => {
+                document.body.removeChild(inputElemenet);
+            }, 1000);
+        }
+        document.body.addEventListener('focus', teardown, true);
+
+        document.body.appendChild(inputElemenet);
+        inputElemenet.click();
+    }
+
+    let uploadImage = () => {
+        GlobalState.loading = true
+        pickFile(file => {
+            console.log("Got file!")
+            const reader = new FileReader()
+            reader.onloadend = async () => {
+                // const base64Image = reader.result.split(',')[1] // Extract Base64 part
+                await setWallImage(reader.result)
+                await loadRoutesAndHolds(true)
+                showToast("Image updated!")
+                GlobalState.loading = false
+            }
+            reader.readAsDataURL(file) // Converts file to Base64
+        })
     }
 
     return html(GlobalState)`
@@ -230,7 +271,7 @@ ${() => GlobalState.loading ? html()`
                 Configure Holds
             </x-button>
             <x-button class="settings-item"
-                      onclick=${() => console.log("bling bling")}>
+                      onclick=${() => uploadImage()}>
                 <x-icon icon="fa fa-file-image"></x-icon>
                 Change wall image
             </x-button>

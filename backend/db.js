@@ -21,6 +21,8 @@ async function queryNeo4j(query, params, options) {
         )
         return result.records.map(record => record.toObject())
     } catch (e) {
+        // console.error(e)
+        console.trace(e)
         throw `Error querying neo4j: ${e}`
     }
 }
@@ -43,9 +45,25 @@ async function readNeo4jSingleResult(query, params) {
     return results[0]
 }
 
-async function getRoutes(whereClause, parameters) {
+async function getWallImage(wallId) {
+    let result = await queryNeo4jSingleResult(`
+    MERGE (wall:Wall{id: $wallId})
+    ON CREATE SET wall.holdCounter = -1
+    RETURN wall.image as image
+    `, {wallId})
+    return result.image
+}
+
+async function setWallImage(wallId, image) {
+    return await queryNeo4jSingleResult(`
+    MATCH (wall:Wall{id: $wallId})
+    SET wall.image = $image
+    `, {wallId, image})
+}
+
+async function getRoutes(wallId, whereClause, parameters) {
     return await readNeo4j(`
-    MATCH (route:Route${whereClause || ""})
+    MATCH (:Wall{id: $wallId}) -[:has]-> (route:Route${whereClause || ""})
     OPTIONAL MATCH (route)-[e]->(hold:Hold)
     WITH route, collect(hold) as holds, collect(e) as edges
     RETURN route.id as id,
@@ -57,17 +75,19 @@ async function getRoutes(whereClause, parameters) {
            [i IN range(0, size(holds) - 1) | {id: holds[i].id, holdType: edges[i].holdType}] AS holds
            //[h IN holds | {id: h.id, holdType: e.holdType}] AS holds
     ORDER BY route.createdAt ASC
-    `, parameters || {})
+    `, {wallId, ...(parameters || {})}
+    )
 }
 
 /** @returns {Promise<Route>} */
-async function getRoute(id) {
-    let result = await getRoutes(`{id: $id}`, {id})
+async function getRoute(wallId, routeId) {
+    let result = await getRoutes(wallId, `{id: $routeId}`, {routeId})
     return result[0]
 }
 
-async function createRoute(setter) {
+async function createRoute(wallId, setter) {
     return await queryNeo4jSingleResult(`
+    MATCH (wall:Wall{id: $wallId})
     CREATE (route:Route{
         id: randomUUID(),
         createdAt: timestamp(),
@@ -76,6 +96,7 @@ async function createRoute(setter) {
         stars: 0,
         grade: 3
     })
+    CREATE (wall) -[:has]-> (route)
     RETURN route.id as id,
            route.createdAt as createdAt,
            route.name as name, 
@@ -84,89 +105,91 @@ async function createRoute(setter) {
            route.stars as stars,
            [] as holds 
            
-    `, {setter})
+    `, {wallId, setter})
 }
 
-async function updateRoute(id, name, grade, setter) {
+async function updateRoute(wallId, routeId, name, grade, setter) {
     await queryNeo4j(`
-    MATCH (route:Route{id: $id})
+    MATCH (wall:Wall{id: $wallId}) -[:has]-> (route:Route{id: $routeId})
     SET route.name = $name, route.grade = $grade, route.setter = $setter
-    `, {id, name, grade, setter})
+    `, {wallId, routeId, name, grade, setter})
 }
 
-async function deleteRoute(id) {
+async function deleteRoute(wallId, routeId) {
     await queryNeo4j(`
-    MATCH (route:Route{id: $id})
+    MATCH (wall:Wall{id: $wallId}) -[:has]-> (route:Route{id: $routeId})
     DETACH DELETE route
-    `, {id})
+    `, {wallId, routeId})
 }
 
-async function getHolds() {
+async function getHolds(wallId) {
     return await readNeo4j(`
-    MATCH (hold:Hold)
+    MATCH (wall:Wall{id: $wallId}) -[:has]-> (hold:Hold)
     RETURN hold.id as id,
            hold.x as x,
            hold.y as y
-    `)
+    `, {wallId})
 }
 
-async function createHold() {
+async function createHold(wallId) {
     return await queryNeo4jSingleResult(`
     // We want sequential ids so we use Counter node
-    MERGE (counter:Counter {name: "routeIdCounter"})
-    ON CREATE SET counter.value = -1
-    SET counter.value = counter.value + 1
-    WITH counter.value AS newId
+    MATCH (wall:Wall{id: $wallId})
+    SET wall.holdCounter = wall.holdCounter + 1
+    WITH wall
     
     CREATE (hold:Hold{
-        id: newId,
+        id: wall.holdCounter,
         x: 0.5,
         y: 0.5
     })
+    CREATE (wall) -[:has]-> (hold)
     RETURN hold.id as id,
            hold.x as x,
            hold.y as y
-    `)
+    `, {wallId})
 }
 
-async function moveHold(id, x, y) {
+async function moveHold(wallId, holdId, x, y) {
     await queryNeo4j(`
-    MATCH (hold:Hold{id: $id})
+    MATCH (wall:Wall{id: $wallId}) -[:has]-> (hold:Hold{id: $holdId})
     SET hold.x = $x, hold.y = $y
-    `, {id, x, y})
+    `, {wallId, holdId, x, y})
 }
 
-async function deleteHold(id) {
+async function deleteHold(wallId, holdId) {
     await queryNeo4j(`
-    MATCH (hold:Hold{id: $id})
+    MATCH (wall:Wall{id: $wallId}) -[:has]-> (hold:Hold{id: $holdId})
     DETACH DELETE hold
-    `, {id})
+    `, {wallId, holdId})
 }
 
-async function addHoldToRoute(holdId, routeId, holdType) {
+async function addHoldToRoute(wallId, holdId, routeId, holdType) {
     await queryNeo4j(`
-    MATCH (route:Route{id: $routeId}), (hold:Hold{id: $holdId})
+    MATCH (route:Route{id: $routeId}) <-[:has]- (wall:Wall{id: $wallId}) -[:has]-> (hold:Hold{id: $holdId})
     CREATE (route) -[:has{holdType: $holdType}]-> (hold)
-    `, {holdId, routeId, holdType})
+    `, {wallId, holdId, routeId, holdType})
 }
 
-async function removeHoldFromRoute(holdId, routeId) {
+async function removeHoldFromRoute(wallId, holdId, routeId) {
     await queryNeo4j(`
-    MATCH (route:Route{id: $routeId}) -[e:has]-> (hold:Hold{id: $holdId})
+    MATCH (route:Route{id: $routeId}) -[e:has]-> (hold:Hold{id: $holdId}) <-[:has]- (wall:Wall{id: $wallId})
     DELETE e
-    `, {holdId, routeId})
+    `, {wallId, holdId, routeId})
 }
 
-async function setRouteStars(id, stars) {
+async function setRouteStars(wallId, routeId, stars) {
     await queryNeo4j(`
-    MATCH (route:Route{id: $id})
+    MATCH (wall:Wall{id: $wallId}) -[:has]-> (route:Route{id: $routeId})
     SET route.stars = $stars
-    `, {id, stars})
+    `, {wallId, routeId, stars})
 }
 
 export {
     queryNeo4j,
     readNeo4j,
+    getWallImage,
+    setWallImage,
     getRoutes,
     getRoute,
     createRoute,

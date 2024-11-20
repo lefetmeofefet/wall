@@ -1,5 +1,5 @@
 import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
-import {enterRoutePage, GlobalState} from "./state.js";
+import {enterRoutePage, GlobalState, loadRoutesAndHolds} from "./state.js";
 import "./components/text-input.js"
 import "./components/x-button.js"
 import "./components/x-icon.js"
@@ -33,6 +33,7 @@ createYoffeeElement("connect-page", () => {
             GlobalState.loading = true
             GlobalState.selectedWall = wall
             updateUrlParams({wall: undefined})
+            await loadRoutesAndHolds(true)
 
             if (urlParams.route != null) {
                 await enterRoutePage(GlobalState.routes.find(r => r.id === urlParams.route))

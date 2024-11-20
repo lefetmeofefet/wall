@@ -1,5 +1,5 @@
 import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
-import {exitRoutePage, GlobalState, loadRoutesAndHolds} from "./state.js"
+import {exitRoutePage, GlobalState, loadRoutesAndHolds, WallImage} from "./state.js"
 import "./components/text-input.js"
 import "./components/x-button.js"
 import "./components/x-tag.js"
@@ -122,9 +122,7 @@ createYoffeeElement("single-route-page", (props, self) => {
         if (GlobalState.configuringHolds) {
             hold.inRoute = !hold.inRoute
             hold.holdType = ""
-            if (GlobalState.autoLeds || state.highlightingRoute) {
-                await setHoldState(hold)
-            }
+            await setHoldState(hold)
         } else if (!state.editMode) {
             showToast("Click the edit button to edit the route, dumbass")
         }
@@ -252,10 +250,11 @@ createYoffeeElement("single-route-page", (props, self) => {
         height: inherit;
         position: relative;
         /*margin-bottom: 70px;*/
-        background-image: url("../res/wall.jpg");
+        /*background-image: url("../res/wall.jpg");*/
         background-size: 100% 100%; /* Stretches the image to fit the div exactly */
         background-position: center; /* Centers the image in the div */
         background-repeat: no-repeat; /* Prevents tiling */
+        background-color: #ffffffe0;
     }
     
     #holds-container {
@@ -338,7 +337,11 @@ createYoffeeElement("single-route-page", (props, self) => {
         background-color: var(--secondary-color);
     }
 </style>
-
+<style>
+    #route {
+        background-image: ${WallImage == null ? null : `url(${WallImage})`};
+    }
+</style>
 ${() => GlobalState.loading ? html()`
 <style>
     /* Loader */

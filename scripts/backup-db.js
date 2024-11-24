@@ -1,5 +1,5 @@
 import neo4j from "neo4j-driver";
-import {queryNeo4j} from "../backend/db.js";
+import {closeConnection, queryNeo4j} from "../backend/db.js";
 import fs from "fs";
 
 let result = await queryNeo4j(
@@ -17,3 +17,4 @@ const filename = `backups/whol-neo4j-backup-${timestamp}.json`;
 // Write the data to a JSON file
 fs.writeFileSync(filename, JSON.stringify(result[0], null, 2), 'utf8');
 console.log(`Backup saved to ${filename}`);
+await closeConnection()

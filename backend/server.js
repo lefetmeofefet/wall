@@ -89,6 +89,25 @@ app.post('/setRouteStars', async (req, res) => {
     res.json({status: 'success'})
 })
 
+// Global error middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack)
+
+    // Customize error response
+    res.status(500).json({
+        message: 'Something went wrong!',
+        error: err.message
+    })
+})
+
 app.listen(Config.port, () => {
     console.log(`WHOL is UP! https://localhost:${Config.port}`)
+})
+
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err)
+})
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection:', reason)
 })

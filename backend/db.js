@@ -11,6 +11,9 @@ let driver = neo4j.driver(
 const serverInfo = await driver.getServerInfo()
 console.log('Connection to neo4j established: ', serverInfo)
 
+async function closeConnection() {
+    await driver.close()
+}
 
 async function queryNeo4j(query, params, options) {
     try{
@@ -201,5 +204,6 @@ export {
     deleteHold,
     addHoldToRoute,
     removeHoldFromRoute,
-    setRouteStars
+    setRouteStars,
+    closeConnection
 }

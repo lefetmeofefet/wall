@@ -5,11 +5,8 @@ import {
     loadRoutesAndHolds,
     updateTheme,
     enterConfigureHoldsPage,
-    snakeMeUp
+    snakeMeUp, toggleLikeRoute
 } from "../state.js";
-import {setWallBrightness, setWallName} from "../bluetooth.js";
-import {enterFullscreen, exitFullscreen, isFullScreen} from "../../utilz/fullscreen.js";
-import {createRoute} from "../api.js";
 import "../components/text-input.js"
 import "../components/x-loader.js"
 import "../components/x-button.js"
@@ -17,11 +14,11 @@ import "../components/x-icon.js"
 import "../components/x-tag.js"
 import "../components/x-dialog.js"
 import "../components/x-switch.js"
+import {FILTER_TYPES, SORT_TYPES} from "./routes-filter.js";
 
 
 createYoffeeElement("routes-list", (props, self) => {
     return html(GlobalState)`
-<link href="../../style/scrollbar-style.css" rel="stylesheet">
 <style>
     :host {
         display: flex;
@@ -31,6 +28,13 @@ createYoffeeElement("routes-list", (props, self) => {
         /*Making the scrollbar far to the right:*/
         margin-right: -10%; /* Negative margin equal to container's padding */
         padding-right: calc(10% - 7px); /* Prevents content from being under the scrollbar */
+    }
+    
+    @media (max-width: 900px) {
+        :host {
+            margin-right: -7%; /* Negative margin equal to container's padding */
+            padding-right: 7%; /* Prevents content from being under the scrollbar */
+        }
     }
     
     .route {
@@ -44,6 +48,7 @@ createYoffeeElement("routes-list", (props, self) => {
         height: 30px; /* Important for scroll not moving when reloading*/
         --overlay-color: rgb(var(--text-color-rgb), 0.1);
         --ripple-color: rgb(var(--text-color-rgb), 0.3);
+        gap: 5px;
     }
     
     .route + .route {
@@ -53,7 +58,6 @@ createYoffeeElement("routes-list", (props, self) => {
     .route > .left-side {
         display: flex;
         flex-direction: column;
-        margin-right: 10px;
     }
     
     .route > .left-side > .name {
@@ -69,31 +73,88 @@ createYoffeeElement("routes-list", (props, self) => {
     .route > .stars {
         color: #BFA100;
         display: flex;
-        margin-right: 10px;
         font-size: 12px;
         margin-left: auto;
     }
     
+    .route > .like-button {
+        margin-bottom: auto;
+        color: var(--text-color);
+        opacity: 0.8;
+        border-radius: 100px;
+        padding: 7px;
+        box-shadow: none;
+        min-width: fit-content;
+    }
+    
+    .route > .like-button[liked] {
+        color: var(--love-color);
+    }
+    
+    @media (hover: hover) and (pointer: fine) {
+        /*This is for mobile because :hover stays on after clicking*/
+        .route > .like-button:hover {
+            color: var(--love-color);
+        }
+    }
+    
     .route > .grade {
-        margin-right: 10px;
-        width: 21px;
+        min-width: 21px;
     }
 </style>
 
-${() => GlobalState.routes.map(route => html()`
+${() => GlobalState.routes
+        .filter(route => {
+            for (let filter of GlobalState.filters) {
+                if (filter.type === FILTER_TYPES.GRADE) {
+                    if (route.grade < filter.value.min || route.grade > filter.value.max) {
+                        return false
+                    }
+                } else if (filter.type === FILTER_TYPES.RATING) {
+                    if (route.stars < filter.value) {
+                        return false
+                    }
+                } else if (filter.type === FILTER_TYPES.LIKED_ROUTES) {
+                    if (!route.isLiked) {
+                        return false
+                    }
+                }
+            }
+            return true
+        })
+        .sort((r1, r2) => {
+            if (GlobalState.sorting === SORT_TYPES.NEWEST) {
+                return r1.createdAt < r2.createdAt ? 1 : -1
+            } else if (GlobalState.sorting === SORT_TYPES.OLDEST) {
+                return r1.createdAt < r2.createdAt ? -1 : 1
+            } else if (GlobalState.sorting === SORT_TYPES.RATING) {
+                return r1.stars < r2.stars ? 1 : -1
+            } else if (GlobalState.sorting === SORT_TYPES.MOST_SENDS) {
+                return r1.createdAt < r2.createdAt ? 1 : -1 // TODO FIX
+            } else if (GlobalState.sorting === SORT_TYPES.LEAST_SENDS) {
+                return r1.createdAt < r2.createdAt ? 1 : -1 // TODO FIX
+            }
+        })
+        .map(route => html(route)`
 <x-button class="route" 
-          onclick=${() => enterRoutePage(route)}>
+          onclick=${() => enterRoutePage(route)}
+          no-ripple>
     <div class="left-side">
         <div class="name">${() => route.name}</div>
         <div class="setter">${() => route.setter}</div>
     </div>
-    
     
     <div class="stars">
         ${() => route.stars > 0 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
         ${() => route.stars > 1 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
         ${() => route.stars > 2 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
     </div>
+
+    <x-button class="like-button"
+              liked=${() => route.isLiked} 
+              onclick=${() => e => {e.stopPropagation(); e.preventDefault(); toggleLikeRoute(route)}}>
+        <x-icon icon="fa fa-heart"></x-icon>
+    </x-button>
     
     <div class="grade">V${() => route.grade}</div>
 </x-button>

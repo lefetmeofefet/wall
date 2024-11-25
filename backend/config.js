@@ -29,11 +29,6 @@ dotenv.config({
 });
 
 const Config = {
-    dev: process.env.NODE_ENV?.toLowerCase() === "dev",
-    ssl: {
-        keyPath: process.env.SSL_KEY_PATH,
-        certPath: process.env.SSL_CERT_PATH
-    },
     port: process.env.PORT || 8080,
     hostname: process.env.HOSTNAME || "0.0.0.0",
     neo4j: {

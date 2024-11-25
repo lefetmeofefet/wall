@@ -3,9 +3,8 @@ import {enterRoutePage, GlobalState, loadRoutesAndHolds} from "./state.js";
 import "./components/text-input.js"
 import "./components/x-button.js"
 import "./components/x-icon.js"
-import {getWallInfo, connectToWall} from "./bluetooth.js";
+import {Bluetooth} from "./bluetooth.js";
 import {getUrlParams, updateUrlParams} from "../utilz/url-utilz.js";
-import {showToast} from "../utilz/toaster.js";
 
 const CONNECTED_WALLS_LOCALSTORAGE_KEY = "connected_walls"
 
@@ -44,7 +43,7 @@ createYoffeeElement("connect-page", () => {
     }
 
     async function connectToNearbyWall() {
-        let wall = await connectToWall()
+        let wall = await Bluetooth.connectToWall()
         // Update localstorage past walls
         if (!(pastConnectedWalls || []).find(existingWall => existingWall.id === wall.id)) {
             pastConnectedWalls = [
@@ -65,6 +64,12 @@ createYoffeeElement("connect-page", () => {
         height: 100%;
         overflow: hidden;
         padding: 20px 10% 0 10%;
+    }
+    
+    @media (max-width: 900px) {
+        :host {
+            padding: 20px 6% 0 6%;
+        }
     }
     
     #title {

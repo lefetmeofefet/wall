@@ -112,9 +112,9 @@ class MessageCallbacks : public BLECharacteristicCallbacks {
           response["command"] = "playerAteApple";
           sendMessage(JSON.stringify(response));
           createApple();
-        } else if (((int)led["r"] != 0 && (int)led["g"] != 0 && (int)led["b"] != 0) && (existingLed.r != 0 && existingLed.g != 0 && existingLed.b != 0)) {
-          // if new led tries to override existing led, and kill the player
-          //Serial.println("Killing " + (int)led["r"] + " " + (int)led["g"] + " " + (int)led["b"]);
+        } else if (((int)led["r"] != 0 || (int)led["g"] != 0 || (int)led["b"] != 0) && (existingLed.r != 0 || existingLed.g != 0 || existingLed.b != 0)) {
+          // if new led tries to override existing led, kill the player
+          // Serial.println("Killing " + (int)led["r"] + " " + (int)led["g"] + " " + (int)led["b"]);
           JSONVar response;
           response["color"] = led;
           response["command"] = "killPlayer";
@@ -127,10 +127,7 @@ class MessageCallbacks : public BLECharacteristicCallbacks {
       leds[led["i"]] = CRGB(led["r"], led["g"], led["b"]);
       FastLED.show();
     } else if (command == "clearLeds") {
-      for (int i=0; i<NUM_LEDS; i++) {
-        leds[i] = CRGB(0, 0, 0);
-      }
-      FastLED.show();
+      clearLeds();
     }
   }
 };
@@ -167,9 +164,9 @@ void setupBluetooth() {
     String wallName = getWallName();
     BLEDevice::init(wallName);
     BLEDevice::setMTU(256); // Increase max transmission unit (request size) // NEW TESTING
-    
+
     // Max bluetooth power! // NEW TESTING
-    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT, ESP_PWR_LVL_P9); 
+    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT, ESP_PWR_LVL_P9);
     esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, ESP_PWR_LVL_P9);
     esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_SCAN ,ESP_PWR_LVL_P9);
 
@@ -195,7 +192,7 @@ void setupBluetooth() {
     // Connection interval - lower is less lag but higher power usage
     pAdvertising->setMinPreferred(0x06);  // should help with iOS issue (??) // NEW TESTING
     pAdvertising->setMinPreferred(0x12); // NEW TESTING
-    
+
     // Advertising interval - same as above
     //pAdvertising->setMinInterval(0x18); // 30ms
     //pAdvertising->setMaxInterval(0x30); // 60ms
@@ -210,10 +207,7 @@ void setupLeds() {
   setBrightness(getBrightness());
 
   // Shut down leds on startup
-  for (int i=0; i<NUM_LEDS; i++) {
-    leds[i] = CRGB(0, 0, 0);
-  }
-  FastLED.show();
+  clearLeds();
 }
 
 void setup() {
@@ -222,8 +216,28 @@ void setup() {
   setupLeds();
 }
 
+
+int secondsWithoutConnection = 0;
+const CLEAR_LEDS_TIMEOUT_SECONDS = 3600;
 void loop() {
     delay(1000);
+
+    // Clear the leds if no device is connected for some time
+    if (devicesConnected == 0) {
+      secondsWithoutConnection += 1
+      if (secondsWithoutConnection == CLEAR_LEDS_TIMEOUT_SECONDS) {
+        clearLeds();
+      }
+    } else {
+      secondsWithoutConnection = 0;
+    }
+}
+
+void clearLeds() {
+  for (int i=0; i<NUM_LEDS; i++) {
+    leds[i] = CRGB(0, 0, 0);
+  }
+  FastLED.show();
 }
 
 

@@ -1,20 +1,11 @@
 import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
 import {exitRoutePage, GlobalState, loadRoutesAndHolds, WallImage} from "./state.js"
+import {Api} from "./api.js"
+import {showToast} from "../utilz/toaster.js";
+import {Bluetooth} from "./bluetooth.js";
 import "./components/text-input.js"
 import "./components/x-button.js"
 import "./components/x-tag.js"
-import * as api from "./api.js";
-import {
-    addHoldToRoute,
-    createHold,
-    moveHold,
-    removeHoldFromRoute,
-    setRouteStars,
-    updateRoute
-} from "./api.js";
-import {showToast} from "../utilz/toaster.js";
-import {clearLeds, highlightRoute, setHoldState} from "./bluetooth.js";
-
 
 createYoffeeElement("single-route-page", (props, self) => {
     let state = {
@@ -39,7 +30,7 @@ createYoffeeElement("single-route-page", (props, self) => {
 
         localStorage.setItem("setterName", setter)
         console.log(`Updating route to name: ${name}, grade: ${grade}`)
-        await updateRoute(selectedRoute.id, name, grade, setter)
+        await Api.updateRoute(selectedRoute.id, name, grade, setter)
 
         selectedRoute.name = name
         selectedRoute.grade = grade
@@ -71,7 +62,7 @@ createYoffeeElement("single-route-page", (props, self) => {
         if (state.editMode && clickedHold != null) {
             if (dragging) {
                 if (GlobalState.configuringHolds) {
-                    moveHold(clickedHold.id, clickedHold.x, clickedHold.y)
+                    Api.moveHold(clickedHold.id, clickedHold.x, clickedHold.y)
                 }
             } else {
                 holdClicked(clickedHold)
@@ -120,24 +111,37 @@ createYoffeeElement("single-route-page", (props, self) => {
         }
 
         if (GlobalState.configuringHolds) {
+            // Clear the current led
+            for (let hold of GlobalState.holds) {
+                if (hold.inRoute) {
+                    hold.inRoute = false
+                    hold.holdType = ""
+                    await Bluetooth.setHoldState(hold)
+                }
+            }
+
+            // Light the clicked led
             hold.inRoute = !hold.inRoute
             hold.holdType = ""
-            await setHoldState(hold)
-        } else if (!state.editMode) {
-            showToast("Click the edit button to edit the route, dumbass")
+            await Bluetooth.setHoldState(hold)
+            return
+        }
+
+        if (!state.editMode) {
+            showToast("Click the edit button to edit the route")
         }
 
         if (state.editMode && GlobalState.selectedRoute != null) {
             hold.inRoute = !hold.inRoute
             hold.holdType = ""
             if (GlobalState.autoLeds || state.highlightingRoute) {
-                await setHoldState(hold)
+                await Bluetooth.setHoldState(hold)
             }
             if (hold.inRoute) {
-                await addHoldToRoute(hold.id, GlobalState.selectedRoute.id)
+                await Api.addHoldToRoute(hold.id, GlobalState.selectedRoute.id)
                 GlobalState.selectedRoute.holds.push({id: hold.id})
             } else {
-                await removeHoldFromRoute(hold.id, GlobalState.selectedRoute.id)
+                await Api.removeHoldFromRoute(hold.id, GlobalState.selectedRoute.id)
                 GlobalState.selectedRoute.holds = GlobalState.selectedRoute.holds.filter(h => h.id !== hold.id)
             }
         }
@@ -148,11 +152,7 @@ createYoffeeElement("single-route-page", (props, self) => {
         isAfterLongPress = true
 
         if (GlobalState.configuringHolds) {
-            if (!hold.inRoute) {
-                hold.inRoute = true
-                hold.holdType = ""
-                await setHoldState(hold)
-            }
+            return
         }
 
         if (state.editMode && GlobalState.selectedRoute != null) {
@@ -165,14 +165,14 @@ createYoffeeElement("single-route-page", (props, self) => {
             }
 
             if (GlobalState.autoLeds || state.highlightingRoute) {
-                await setHoldState(hold)
+                await Bluetooth.setHoldState(hold)
             }
 
             // If its in route, we remove it to add it again with a different holdType
             if (hold.inRoute) {
-                await removeHoldFromRoute(hold.id, GlobalState.selectedRoute.id)
+                await Api.removeHoldFromRoute(hold.id, GlobalState.selectedRoute.id)
             }
-            await addHoldToRoute(hold.id, GlobalState.selectedRoute.id, hold.holdType)
+            await Api.addHoldToRoute(hold.id, GlobalState.selectedRoute.id, hold.holdType)
             GlobalState.selectedRoute.holds.push({id: hold.id, holdType: hold.holdType})
         }
     }
@@ -277,22 +277,22 @@ createYoffeeElement("single-route-page", (props, self) => {
         border: 3px solid transparent;
     }
     
-    #holds-container > .hold[data-hold-type=hold] {
-        border-color: var(--secondary-color);
+    #holds-container > .hold:is([data-hold-type=hold], [data-hold-type=start], [data-hold-type=finish]) {
         width: 34px;
         height: 34px;
+        background-color: transparent;
+    }
+    
+    #holds-container > .hold[data-hold-type=hold] {
+        border-color: var(--secondary-color);
     }
     
     #holds-container > .hold[data-hold-type=start] {
         border-color: #20ff30;
-        width: 34px;
-        height: 34px;
     }
     
     #holds-container > .hold[data-hold-type=finish] {
         border-color: #fa3344;
-        width: 34px;
-        height: 34px;
     }
     
     #bottom-buttons {
@@ -404,7 +404,9 @@ ${() => GlobalState.loading ? html()`
 </div>
 <div id="route">
     <div id="holds-container">
-        ${() => GlobalState.holds.map(hold => html(hold)`
+        ${() => GlobalState.holds
+        .filter(hold => state.editMode || GlobalState.configuringHolds || hold.inRoute)
+        .map(hold => html(hold)`
         <div class="hold"
              data-hold-type=${hold.inRoute ? (hold.holdType === "" ? "hold" : hold.holdType) : ""}
              style="${() => `
@@ -446,7 +448,10 @@ ${() => GlobalState.loading ? html()`
               onclick=${async () => {
                   state.editMode = !state.editMode
                   if (state.editMode) {
-                      showToast("Click holds to edit the route! long press to cycle start/finish hold")
+                      if (!localStorage.getItem("edit_holds_toasted")) {
+                          localStorage.setItem("edit_holds_toasted", "true")
+                          showToast("Click holds to edit the route! long press to cycle start/finish hold")
+                      }
                   }
               }}>
         <x-icon icon="fa fa-edit"></x-icon>
@@ -462,7 +467,7 @@ ${() => GlobalState.loading ? html()`
                       stars = 0
                   }
                   GlobalState.selectedRoute.stars = stars
-                  await setRouteStars(GlobalState.selectedRoute.id, stars)
+                  await Api.setRouteStars(GlobalState.selectedRoute.id, stars)
               }}>
         <x-icon icon="fa fa-star"></x-icon>
         ${() => GlobalState.selectedRoute?.stars > 1 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
@@ -475,9 +480,9 @@ ${() => GlobalState.loading ? html()`
               active=${() => state.highlightingRoute}
               onclick=${async () => {
                   if (state.highlightingRoute) {
-                      await clearLeds()
+                      await Bluetooth.clearLeds()
                   } else {
-                      await highlightRoute(GlobalState.selectedRoute)
+                      await Bluetooth.highlightRoute(GlobalState.selectedRoute)
                   }
                   
                   state.highlightingRoute = !state.highlightingRoute
@@ -489,7 +494,7 @@ ${() => GlobalState.loading ? html()`
     ${() => GlobalState.configuringHolds && html()`
     <x-button id="plus-button"
               onclick=${async () => {
-                  let {hold} = await createHold()
+                  let {hold} = await Api.createHold()
                   GlobalState.holdMapping.set(hold.id, hold)
                   GlobalState.holds = [...GlobalState.holds, hold]
               }}>

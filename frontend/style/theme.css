@@ -16,6 +16,9 @@ body {
 
     --background-color: rgb(var(--background-color-rgb));
     --secondary-color: rgb(var(--secondary-color-rgb));
+    --secondary-color-weak-1: rgb(var(--secondary-color-rgb), 0.5);
+    --secondary-color-weak-2: rgb(var(--secondary-color-rgb), 0.3);
+    --secondary-color-weak-3: rgb(var(--secondary-color-rgb), 0.1);
     --text-color: rgb(var(--text-color-rgb));
     --text-color-on-secondary: rgb(240, 240, 240);
     --text-color-weak-1: rgb(var(--text-color-rgb), 0.5);

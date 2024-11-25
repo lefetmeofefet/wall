@@ -73,12 +73,18 @@ async function connectToWall(secondTry) {
     } catch(e) {
         console.log("Error connecting to BT: ", e)
         console.error(e)
-        if (e.code !== 8) {  // If user pressed "Cancel"
-            showToast(`Error connecting to Bluetooth: ${e.toString()}`, {error: true})
+        if (e.code === 19) {  // Sometimes happens randomly with the message "GATT Server is disconnected. Cannot retrieve services. (Re)connect first with `device.gatt.connect`."
+            // Second try is stupid
+            // if (!secondTry) {
+            //     console.log(`Failed with msg ${e.toString()}, giving it a second try`)
+            //     return await connectToWall(true)
+            // }
+            showToast(`Error connecting to Bluetooth, device is probably too far away`, {error: true})
+            throw new Error(`Error connecting to Bluetooth: ${e.toString()}`)
         }
-        if (e.code === 19 && !secondTry) {  // Sometimes happens randomly with the message "GATT Server is disconnected. Cannot retrieve services. (Re)connect first with `device.gatt.connect`."
-            console.log(`Failed with msg ${e.toString()}, giving it a second try`)
-            return await connectToWall(true)
+        if (e.code !== 8) {  // If user pressed "Cancel"
+            showToast(`Unknown error connecting to Bluetooth: ${e.toString()}`, {error: true})
+            throw new Error(`Unknown error connecting to Bluetooth: ${e.toString()}`)
         }
     } finally {
         GlobalState.loading = false
@@ -126,7 +132,10 @@ async function consumeQueue() {
 
 async function sendBTMessage(message){
     if (!GlobalState.bluetoothConnected) {
-        await connectToWall(message)
+        let connectionResult = await connectToWall()
+        if (connectionResult == null) {
+            return
+        }
     }
     await sendBTMessageSync(message)
 }
@@ -169,7 +178,7 @@ function getLedRGB(isOn, holdType) {
         } else if (holdType === "finish") {
             return {r: 255, g: 0, b: 0}
         }
-        return {r: 0, g: 0, b: 255}
+        return {r: 67, g: 185, b: 194}
     }
     return {r: 0, g: 0, b: 0}
 }
@@ -236,7 +245,7 @@ setInterval(async () => {
     }
 }, 5000)
 
-export {
+let Bluetooth = {
     connectToWall,
     setWallName,
     highlightRoute,
@@ -248,3 +257,5 @@ export {
     setLeds,
     messageQueue
 }
+
+export {Bluetooth}

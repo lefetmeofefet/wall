@@ -8,7 +8,7 @@ customElements.define("x-button", class extends YoffeeElement {
         });
 
         this.onmousedown = e => {
-            if (this.hasAttribute("disabled")) {
+            if (this.hasAttribute("disabled") || this.hasAttribute("no-ripple")) {
                 return;
             }
             let rect = e.target.getBoundingClientRect();

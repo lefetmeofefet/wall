@@ -11,15 +11,16 @@ class Wall {
 }
 
 class Route {
-    constructor(id, name, grade, setter, holds) {
+    constructor(id, name, grade, setter, holds, createdAt) {
         this.id = id
         this.name = name
         this.grade = grade
         this.setter = setter
+        this.createdAt = createdAt
 
         /** @type {Hold[]} */
         this.holds = holds || []
-        this.starred = false
+        this.stars = 0
     }
 
     fromDb(dbObject) {

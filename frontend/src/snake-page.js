@@ -4,7 +4,7 @@ import "./components/text-input.js"
 import "./components/x-button.js"
 import "./components/x-icon.js"
 import "./components/x-tag.js"
-import {messageQueue, setHoldState, setLeds, setSnakeModeLed} from "./bluetooth.js";
+import {Bluetooth} from "./bluetooth.js";
 
 createYoffeeElement("snake-page", (props, self) => {
     let state = {
@@ -20,11 +20,11 @@ createYoffeeElement("snake-page", (props, self) => {
     let maxY = Math.max(...GlobalState.holds.map(hold => hold.y))
 
     async function snakeHold(hold) {
-        await setSnakeModeLed(color.r, color.g, color.b, hold.id)
+        await Bluetooth.setSnakeModeLed(color.r, color.g, color.b, hold.id)
     }
 
     async function unsnakeHold(hold) {
-        await setSnakeModeLed(0, 0, 0, hold.id)
+        await Bluetooth.setSnakeModeLed(0, 0, 0, hold.id)
     }
 
     let currentHold
@@ -46,7 +46,7 @@ createYoffeeElement("snake-page", (props, self) => {
             for (let hold of snakeHolds) {
                 ledGroup.i.push(hold.id)
             }
-            await setLeds([ledGroup])
+            await Bluetooth.setLeds([ledGroup])
             randomizeSnake()
         }
     }
@@ -57,7 +57,7 @@ createYoffeeElement("snake-page", (props, self) => {
     }
 
     let interval = setInterval(async () => {
-        if (messageQueue.length > 1) {
+        if (Bluetooth.messageQueue.length > 1) {
             // Don't queue up endless snake moves when the bt connection is slow
             return
         }

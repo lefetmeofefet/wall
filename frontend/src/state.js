@@ -1,7 +1,8 @@
-import {getRoutesAndHolds} from "./api.js";
 import {getUrlParams, registerUrlListener, updateUrlParams} from "../utilz/url-utilz.js";
-import {clearLeds, getWallInfo, highlightRoute} from "./bluetooth.js";
 import {showToast} from "../utilz/toaster.js";
+import {Api} from "./api.js";
+import {Bluetooth} from "./bluetooth.js";
+import {SORT_TYPES} from "./routes-list/routes-filter.js";
 
 const LOCALSTORAGE_AUTO_LEDS_KEY = "auto_ledz"
 function setAutoLeds(autoLeds) {
@@ -31,6 +32,9 @@ const GlobalState = {
 
     /** @type {Map<string, Hold>} */
     holdMapping: new Map(),
+
+    filters: [],
+    sorting: SORT_TYPES.OLDEST
 };
 window.state = GlobalState
 
@@ -49,7 +53,8 @@ if (localStorageDarkTheme != null) {
 }
 
 async function loadRoutesAndHolds(downloadImage) {
-    let response = await getRoutesAndHolds(downloadImage)
+    let response = await Api.getRoutesAndHolds(downloadImage)
+    updateLikedRoutesFromLocalStorage(response.routes)
     GlobalState.routes = response.routes
     GlobalState.holds = response.holds
     if (response.image != null) {
@@ -67,7 +72,7 @@ async function enterRoutePage(route) {
     GlobalState.selectedRoute = route
     updateUrlParams({route: route.id})
     if (GlobalState.autoLeds) {
-        highlightRoute(GlobalState.selectedRoute)
+        Bluetooth.highlightRoute(GlobalState.selectedRoute)
     }
 }
 
@@ -78,19 +83,19 @@ async function enterConfigureHoldsPage() {
     updateUrlParams({configuring: true})  // Important so that clicking "back" won't exit the site
     showToast("Holds are draggable now!")
 
-    await clearLeds()
+    await Bluetooth.clearLeds()
 }
 
 async function exitRoutePage() {
     if (GlobalState.configuringHolds) {
         GlobalState.configuringHolds = false
-        await clearLeds()
+        await Bluetooth.clearLeds()
         updateUrlParams({configuring: undefined})
     } else {
         GlobalState.selectedRoute = null
         updateUrlParams({route: undefined})
         if (GlobalState.autoLeds) {
-            await clearLeds()
+            await Bluetooth.clearLeds()
         }
     }
 
@@ -114,6 +119,35 @@ function snakeMeUp() {
     updateUrlParams({snaking: true})  // Important so that clicking "back" won't exit the site
 }
 
+
+const LOCALSTORAGE_LIKED_ROUTES_KEY = "liked_routes"
+let likedRouteIds = localStorage.getItem(LOCALSTORAGE_LIKED_ROUTES_KEY)
+if (likedRouteIds == null) {
+    likedRouteIds = new Set()
+} else {
+    likedRouteIds = new Set(JSON.parse(likedRouteIds))
+}
+async function toggleLikeRoute(route) {
+    route.isLiked = !route.isLiked
+    if (route.isLiked) {
+        likedRouteIds.add(route.id)
+    } else {
+        likedRouteIds.delete(route.id)
+    }
+    localStorage.setItem(LOCALSTORAGE_LIKED_ROUTES_KEY, JSON.stringify([...likedRouteIds]))
+    // GlobalState.routes = [...GlobalState.routes]
+
+    // await Api.toggleLikeRoute(route.id)
+}
+
+function updateLikedRoutesFromLocalStorage(routes) {
+    for (let route of routes) {
+        if (likedRouteIds.has(route.id)) {
+            route.isLiked = true
+        }
+    }
+}
+
 function onBackClicked() {
     if (GlobalState.isSnaking) {
         GlobalState.isSnaking = false
@@ -129,7 +163,6 @@ function onBackClicked() {
 
 registerUrlListener(() => onBackClicked())
 
-
 export {
     GlobalState,
     WallImage,
@@ -141,5 +174,7 @@ export {
     unselectHolds,
     enterConfigureHoldsPage,
     snakeMeUp,
-    setAutoLeds
+    setAutoLeds,
+    toggleLikeRoute,
+    likedRouteIds
 }

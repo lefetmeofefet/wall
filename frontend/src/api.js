@@ -11,10 +11,16 @@ async function post(url, data) {
             }),
             body: data == null ? null : JSON.stringify(data)
         });
-        return await res.json()
+        if (res.ok) {
+            return await res.json()
+        }
+
+        console.error(res)
+        showToast(`Error communicating with server`, {error: true})
+        return Promise.reject(res)
     } catch (e) {
         console.error(e)
-        showToast(`Error communicating with server: ${e.toString()}`, {error: true})
+        showToast(`Error connecting to server: ${e}`, {error: true})
         throw e
     } finally {
         GlobalState.loading = false
@@ -79,7 +85,7 @@ async function setRouteStars(routeId, stars) {
     return await post("/setRouteStars", {wallId: GlobalState.selectedWall.id, routeId, stars})
 }
 
-export {
+const Api = {
     getRoutesAndHolds,
     setWallImage,
     createRoute,
@@ -92,3 +98,5 @@ export {
     removeHoldFromRoute,
     setRouteStars,
 }
+
+export {Api}

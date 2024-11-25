@@ -7,10 +7,12 @@ import {
     enterConfigureHoldsPage,
     snakeMeUp, setAutoLeds, exitWall
 } from "../state.js";
-import {clearLeds, setWallBrightness, setWallName} from "../bluetooth.js";
+import {Bluetooth} from "../bluetooth.js";
 import {enterFullscreen, exitFullscreen, isFullScreen} from "../../utilz/fullscreen.js";
-import {createRoute, setWallImage} from "../api.js";
+import {Api} from "../api.js";
+import {showToast} from "../../utilz/toaster.js";
 import "./routes-list.js"
+import "./routes-filter.js"
 import "../components/text-input.js"
 import "../components/x-loader.js"
 import "../components/x-button.js"
@@ -18,7 +20,6 @@ import "../components/x-icon.js"
 import "../components/x-tag.js"
 import "../components/x-dialog.js"
 import "../components/x-switch.js"
-import {showToast} from "../../utilz/toaster.js";
 
 
 createYoffeeElement("routes-page", (props, self) => {
@@ -61,7 +62,7 @@ createYoffeeElement("routes-page", (props, self) => {
             const reader = new FileReader()
             reader.onloadend = async () => {
                 // const base64Image = reader.result.split(',')[1] // Extract Base64 part
-                await setWallImage(reader.result)
+                await Api.setWallImage(reader.result)
                 await loadRoutesAndHolds(true)
                 showToast("Image updated!")
                 GlobalState.loading = false
@@ -79,6 +80,12 @@ createYoffeeElement("routes-page", (props, self) => {
         height: 100%;
         overflow: hidden;
         padding: 20px 10% 0 10%;
+    }
+    
+    @media (max-width: 900px) {
+        :host {
+            padding: 20px 6% 0 6%;
+        }
     }
     
     #header {
@@ -119,12 +126,12 @@ createYoffeeElement("routes-page", (props, self) => {
         color: var(--text-color);
         cursor: pointer;
         padding: 19px 10px;
-        margin: 0px 5px;
         font-size: 18px;
         border-bottom: 3px solid #00000000;
         display: flex;
         gap: 8px;
         -webkit-tap-highlight-color: transparent; /* Stops the blue background highlight */
+        margin-left: auto;
     }
     
     #header > #settings-button:hover {
@@ -165,6 +172,10 @@ createYoffeeElement("routes-page", (props, self) => {
         width: -webkit-fill-available;
     }
     
+    routes-filter {
+        
+    }
+    
     #new-route-button, #clear-leds-button {
         border-radius: 1000px;
         position: fixed;
@@ -180,6 +191,7 @@ createYoffeeElement("routes-page", (props, self) => {
         background-color: var(--text-color-weak-3);
         right: calc(13% + 75px);
         font-size: 20px;
+        color: var(--text-color);
     }
     
     #slash-div {
@@ -223,9 +235,12 @@ ${() => GlobalState.loading ? html()`
         let newWallName = prompt("What would you like to call your wall?")
         if (newWallName != null) {
             GlobalState.loading = true
-            await setWallName(newWallName)
-            GlobalState.selectedWall.name = newWallName
-            GlobalState.loading = false
+            try {
+                await Bluetooth.setWallName(newWallName)
+                GlobalState.selectedWall.name = newWallName
+            } finally {
+                GlobalState.loading = false
+            }
         }
     }}>
         ${() => GlobalState.selectedWall?.name}
@@ -243,7 +258,6 @@ ${() => GlobalState.loading ? html()`
         <x-icon icon="fa fa-search"></x-icon>
     </x-button>
     <div id="settings-button" 
-         style="margin-left: auto;"
          tabindex="0"
          onkeydown=${() => e => e.stopPropagation()}
          onmousedown=${() => () => {
@@ -280,7 +294,7 @@ ${() => GlobalState.loading ? html()`
                           let brightness = parseInt(prompt("Enter brightness from 0 to 100: "))
                           if (!isNaN(brightness)) {
                               let realBrightness = Math.round((brightness / 100) * 255)
-                              await setWallBrightness(realBrightness)
+                              await Bluetooth.setWallBrightness(realBrightness)
                               GlobalState.selectedWall.brightness = realBrightness
                           }
                       }}>
@@ -334,14 +348,13 @@ ${() => GlobalState.loading ? html()`
     </x-dialog>
 </div>
 
-<div id="filters-container">
-</div>
+<routes-filter></routes-filter>
 
 <routes-list onscroll=${e => onScroll(e.target.scrollTop)}></routes-list>
 
 <x-button id="new-route-button" 
           onclick=${async () => {
-        let {route} = await createRoute()
+        let {route} = await Api.createRoute()
         route.isNew = true
         GlobalState.routes = [...GlobalState.routes, route]
         await enterRoutePage(route)
@@ -351,7 +364,7 @@ ${() => GlobalState.loading ? html()`
 
 <x-button id="clear-leds-button" 
           onclick=${async () => {
-        await clearLeds()
+        await Bluetooth.clearLeds()
     }}>
     <x-icon icon="fa fa-lightbulb"></x-icon>
     <div id="slash-div"></div>

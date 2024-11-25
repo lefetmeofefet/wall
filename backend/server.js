@@ -11,7 +11,7 @@ import {
     moveHold, removeHoldFromRoute, setRouteStars, setWallImage,
     updateRoute
 } from "./db.js";
-// import {clearLEDs, sendDataToArduino, setLEDs} from "./arduino.js";
+import "express-async-errors"
 
 const app = express()
 
@@ -91,13 +91,10 @@ app.post('/setRouteStars', async (req, res) => {
 
 // Global error middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack)
-
-    // Customize error response
-    res.status(500).json({
-        message: 'Something went wrong!',
-        error: err.message
-    })
+    if (err) {
+        console.error(err.stack)
+        res.status(err.statusCode || 500).json(err.message)
+    }
 })
 
 app.listen(Config.port, () => {

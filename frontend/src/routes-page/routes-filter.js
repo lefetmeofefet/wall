@@ -119,6 +119,7 @@ createYoffeeElement("routes-filter", (props, self) => {
         box-shadow: none;
         white-space: nowrap;
         min-width: fit-content;
+        min-height: fit-content;
     }
     
     .tag > .delete-icon {

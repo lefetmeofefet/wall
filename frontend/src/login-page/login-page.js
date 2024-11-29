@@ -29,6 +29,7 @@ createYoffeeElement("login-page", (props, self) => {
 
     async function finishLogin(user) {
         GlobalState.user = user
+        await new Promise(res => requestAnimationFrame(() => res())) // This is for loader to show up
         GlobalState.walls = await Api.getWalls()
     }
 

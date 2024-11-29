@@ -8,8 +8,6 @@ import {getUrlParams, updateUrlParams} from "../../utilz/url-utilz.js";
 import {Api} from "../api.js";
 
 createYoffeeElement("walls-page", () => {
-
-
     let urlParams = getUrlParams()
     // TODO: Fix the navigation bugs once and for alll!!
     // if (urlParams.wall != null) {
@@ -39,7 +37,7 @@ createYoffeeElement("walls-page", () => {
         await chooseWall(btWall)
     }
 
-    return html(GlobalState, state)`
+    return html(GlobalState)`
 <link href="../../style/scrollbar-style.css" rel="stylesheet">
 <style>
     :host {

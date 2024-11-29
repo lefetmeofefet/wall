@@ -189,6 +189,7 @@ createYoffeeElement("header-bar", (props, self) => {
     yoffee-list-location-marker {
         display: none;
     }
+    
 </style>
 
 ${() => GlobalState.loading ? html()`

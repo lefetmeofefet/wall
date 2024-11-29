@@ -99,6 +99,7 @@ createYoffeeElement("routes-filter", (props, self) => {
         margin-top: 3px;
         padding-bottom: 5px;
         flex-wrap: wrap;
+        min-height: 28px; /* Shit fix for iphone, find better solution*/
     }
     
     x-dialog {
@@ -119,7 +120,6 @@ createYoffeeElement("routes-filter", (props, self) => {
         box-shadow: none;
         white-space: nowrap;
         min-width: fit-content;
-        min-height: fit-content;
     }
     
     .tag > .delete-icon {

@@ -10,3 +10,6 @@ npm-debug.log
 
 # DB Backup files
 whol-neo4j-backup-*
+
+# Env file
+.env

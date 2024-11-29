@@ -21,9 +21,9 @@ async function loadFile(type, onFileLoaded) {
     })
 
     const teardown = () => {
-        fail()
         document.body.removeEventListener('focus', teardown, true)
         setTimeout(() => {
+            fail()
             document.body.removeChild(inputElement)
         }, 1000)
     }

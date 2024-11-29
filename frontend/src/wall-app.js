@@ -1,18 +1,21 @@
 import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
 import {GlobalState, exitRoutePage, unselectHolds} from "./state.js";
-import "./connect-page.js"
+import "./login-page/login-page.js"
+import "./walls-page/walls-page.js"
 import "./snake-page.js"
-import "./single-route-page.js"
-import "./routes-list/routes-page.js"
+import "./single-route-page/single-route-page.js"
+import "./header.js"
+import "./routes-page/routes-page.js"
 import "./components/text-input.js"
 import "./components/x-button.js"
 import "./components/x-icon.js"
 import "./components/x-tag.js"
 
-createYoffeeElement("wall-app", () => {
+createYoffeeElement("wall-app", (props, self) => {
     let state = {
 
     };
+
 
     return html(GlobalState, state)`
 <style>
@@ -25,8 +28,10 @@ createYoffeeElement("wall-app", () => {
 
 </style>
 ${() => {
-    if (GlobalState.selectedWall == null) {
-        return html()`<connect-page></connect-page>`
+    if (GlobalState.user == null) {
+        return html()`<login-page></login-page>`
+    } else if (GlobalState.selectedWall == null) {
+        return html()`<walls-page></walls-page>`
     } else if (GlobalState.selectedRoute != null) {
         return html()`<single-route-page route=${() => GlobalState.selectedRoute}></single-route-page>`
     } else if (GlobalState.configuringHolds) {

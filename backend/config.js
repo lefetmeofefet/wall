@@ -29,13 +29,16 @@ dotenv.config({
 });
 
 const Config = {
+    prod: process.env.NODE_ENV?.toLowerCase() === "production" || process.env.NODE_ENV?.toLowerCase() === "prod",
     port: process.env.PORT || 8080,
     hostname: process.env.HOSTNAME || "0.0.0.0",
     neo4j: {
         uri: process.env.NEO4J_URI,
         user: process.env.NEO4J_USER,
         password: process.env.NEO4J_PASSWORD,
-    }
+    },
+    googleClientId: process.env.GOOGLE_CLIENT_ID,
+    JWTPrivateKey: process.env.JWT_PRIVATE_KEY,
 }
 
 

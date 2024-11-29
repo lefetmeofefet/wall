@@ -90,7 +90,7 @@ ${() => !this.state.open && html()`
                     y: anchor.y
                 } : {
                     x: anchor.offsetLeft,
-                    y: anchor.offsetTop
+                    y: anchor.offsetTop + anchor.offsetHeight + 5
                 };
             this.state.isCentered = false
         }
@@ -126,5 +126,13 @@ ${() => !this.state.open && html()`
 
     isOpen() {
         return this.state.open
+    }
+
+    toggle(...args) {
+        if (this.isOpen()) {
+            this.close()
+        } else {
+            this.open(...args)
+        }
     }
 });

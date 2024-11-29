@@ -1,8 +1,19 @@
+
 class Wall {
-    constructor(id, name, brightness) {
+    constructor(id, name, brightness, image, noHolds, likedRouteIds, sentRouteIds, users, createdAt) {
         this.id = id
         this.name = name
         this.brightness = brightness
+        this.image = image
+        this.noHolds = noHolds
+        /** @type {Set} */
+        this.likedRouteIds = likedRouteIds
+        /** @type {Set} */
+        this.sentRouteIds = sentRouteIds
+
+        /** @type {User[]} */
+        this.users = users
+        this.createdAt = createdAt
     }
 
     fromDb(dbObject) {
@@ -11,16 +22,21 @@ class Wall {
 }
 
 class Route {
-    constructor(id, name, grade, setter, holds, createdAt) {
+    constructor(id, name, grade, setters, holds, sent, liked, sends, createdAt) {
         this.id = id
         this.name = name
         this.grade = grade
-        this.setter = setter
-        this.createdAt = createdAt
+
+        /** @type {User[]} */
+        this.setters = setters
 
         /** @type {Hold[]} */
         this.holds = holds || []
         this.stars = 0
+        this.sent = sent
+        this.liked = liked
+        this.sends = sends
+        this.createdAt = createdAt
     }
 
     fromDb(dbObject) {
@@ -42,3 +58,35 @@ class Hold {
 
     }
 }
+
+const AUTH_METHODS = {
+    email: "email",
+    google: "google"
+}
+
+class User {
+    constructor(id, email, nickname, passwordHash, authMethod) {
+        this.id = id
+        this.email = email
+        this.nickname = nickname
+        this.passwordHash = passwordHash
+        this.authMethod = authMethod
+    }
+
+    fromDb(dbObject) {
+
+    }
+}
+
+let ERROR_MESSAGES = {
+    MISSING_TOKEN: "MISSING_TOKEN",
+    EXPIRED_TOKEN: "EXPIRED_TOKEN",
+    INVALID_TOKEN: "INVALID_TOKEN",
+    NO_USER_WITH_EMAIL: "NO_USER_WITH_EMAIL",
+    EMAIL_ALREADY_EXISTS: "EMAIL_ALREADY_EXISTS",
+    EMAIL_ALREADY_REGISTERED_WITH_GOOGLE: "EMAIL_ALREADY_REGISTERED_WITH_GOOGLE",
+    WRONG_PASSWORD: "WRONG_PASSWORD",
+    GOOGLE_LOGIN_FAILED: "GOOGLE_LOGIN_FAILED",
+}
+
+export {AUTH_METHODS, ERROR_MESSAGES}

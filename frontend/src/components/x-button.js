@@ -17,7 +17,7 @@ customElements.define("x-button", class extends YoffeeElement {
 
             let rippleDiv = document.createElement("div");
             rippleDiv.classList.add('ripple');
-            rippleDiv.setAttribute("style",`top:${y}px; left:${x}px;`);
+            rippleDiv.setAttribute("style",`top:${y}px; left:${x}px; pointer-events: none;`);
             this.shadowRoot.appendChild(rippleDiv);
             setTimeout(() => {
                 this.shadowRoot && this.shadowRoot.removeChild(rippleDiv);

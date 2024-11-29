@@ -2,7 +2,7 @@ import {getUrlParams, registerUrlListener, updateUrlParams} from "../utilz/url-u
 import {showToast} from "../utilz/toaster.js";
 import {Api} from "./api.js";
 import {Bluetooth} from "./bluetooth.js";
-import {SORT_TYPES} from "./routes-list/routes-filter.js";
+import {SORT_TYPES} from "./routes-page/routes-filter.js";
 
 const LOCALSTORAGE_AUTO_LEDS_KEY = "auto_ledz"
 function setAutoLeds(autoLeds) {
@@ -17,6 +17,12 @@ const GlobalState = {
     bluetoothConnected: false,
     configuringHolds: false,
     autoLeds: localStorage.getItem(LOCALSTORAGE_AUTO_LEDS_KEY) === "true",  // Automatically light leds when clicking a route
+
+    /** @type {User} */
+    user: null,
+
+    /** @type {Wall[]} */
+    walls: [],
 
     /** @type {Wall} */
     selectedWall: null,
@@ -34,7 +40,8 @@ const GlobalState = {
     holdMapping: new Map(),
 
     filters: [],
-    sorting: SORT_TYPES.OLDEST
+    freeTextFilter: null,
+    sorting: SORT_TYPES.NEWEST
 };
 window.state = GlobalState
 
@@ -52,15 +59,27 @@ if (localStorageDarkTheme != null) {
     updateTheme(isUserDarkTheme, true)
 }
 
-async function loadRoutesAndHolds(downloadImage) {
-    let response = await Api.getRoutesAndHolds(downloadImage)
-    updateLikedRoutesFromLocalStorage(response.routes)
-    GlobalState.routes = response.routes
-    GlobalState.holds = response.holds
-    if (response.image != null) {
-        WallImage = response.image
+async function loadRoutesAndHolds(includeWallInfo, wallId) {
+    let response = await Api.getRoutesAndHolds(includeWallInfo, wallId)
+    if (response.wallInfo != null) {
+        WallImage = response.wallInfo.image
+        delete response.wallInfo.image
+        response.wallInfo.likedRouteIds = new Set(response.wallInfo.likedRouteIds)
+        response.wallInfo.sentRouteIds = new Set(response.wallInfo.sentRouteIds)
+        GlobalState.selectedWall = response.wallInfo
     }
 
+    for (let route of response.routes) {
+        if (GlobalState.selectedWall.likedRouteIds.has(route.id)) {
+            route.liked = true
+        }
+        if (GlobalState.selectedWall.sentRouteIds.has(route.id)) {
+            route.sent = true
+        }
+    }
+
+    GlobalState.routes = response.routes
+    GlobalState.holds = response.holds
     GlobalState.holdMapping = new Map()
     for (let hold of GlobalState.holds) {
         GlobalState.holdMapping.set(hold.id, hold)
@@ -103,8 +122,10 @@ async function exitRoutePage() {
     await loadRoutesAndHolds()
 }
 
-function exitWall() {
+async function exitWall() {
     GlobalState.selectedWall = null
+    updateUrlParams({wall: undefined})
+    GlobalState.walls = await Api.getWalls()
 }
 
 async function unselectHolds() {
@@ -119,33 +140,27 @@ function snakeMeUp() {
     updateUrlParams({snaking: true})  // Important so that clicking "back" won't exit the site
 }
 
-
-const LOCALSTORAGE_LIKED_ROUTES_KEY = "liked_routes"
-let likedRouteIds = localStorage.getItem(LOCALSTORAGE_LIKED_ROUTES_KEY)
-if (likedRouteIds == null) {
-    likedRouteIds = new Set()
-} else {
-    likedRouteIds = new Set(JSON.parse(likedRouteIds))
-}
 async function toggleLikeRoute(route) {
-    route.isLiked = !route.isLiked
-    if (route.isLiked) {
-        likedRouteIds.add(route.id)
+    route.liked = !route.liked
+    if (route.liked) {
+        GlobalState.selectedWall.likedRouteIds.add(route.id)
     } else {
-        likedRouteIds.delete(route.id)
+        GlobalState.selectedWall.likedRouteIds.delete(route.id)
     }
-    localStorage.setItem(LOCALSTORAGE_LIKED_ROUTES_KEY, JSON.stringify([...likedRouteIds]))
-    // GlobalState.routes = [...GlobalState.routes]
-
-    // await Api.toggleLikeRoute(route.id)
+    await Api.updateLikedStatus(route.id, route.liked)
 }
 
-function updateLikedRoutesFromLocalStorage(routes) {
-    for (let route of routes) {
-        if (likedRouteIds.has(route.id)) {
-            route.isLiked = true
-        }
+async function toggleSentRoute(route) {
+    route.sent = !route.sent
+
+    if (route.sent) {
+        route.sends += 1
+        GlobalState.selectedWall.sentRouteIds.add(route.id)
+    } else {
+        route.sends -= 1
+        GlobalState.selectedWall.sentRouteIds.delete(route.id)
     }
+    await Api.updateSentStatus(route.id, route.sent)
 }
 
 function onBackClicked() {
@@ -163,6 +178,11 @@ function onBackClicked() {
 
 registerUrlListener(() => onBackClicked())
 
+async function signOut() {
+    await Api.signOut()
+    window.location.reload()
+}
+
 export {
     GlobalState,
     WallImage,
@@ -176,5 +196,6 @@ export {
     snakeMeUp,
     setAutoLeds,
     toggleLikeRoute,
-    likedRouteIds
+    toggleSentRoute,
+    signOut
 }

@@ -2,10 +2,7 @@ import {html, createYoffeeElement} from "../../libs/yoffee/yoffee.min.js"
 import {
     GlobalState,
     enterRoutePage,
-    loadRoutesAndHolds,
-    updateTheme,
-    enterConfigureHoldsPage,
-    snakeMeUp, toggleLikeRoute
+    toggleLikeRoute
 } from "../state.js";
 import "../components/text-input.js"
 import "../components/x-loader.js"
@@ -64,10 +61,32 @@ createYoffeeElement("routes-list", (props, self) => {
         
     }
     
-    .route > .left-side > .setter {
-        opacity: 0.5;
-        white-space: nowrap;
+    .route > .left-side > .bottom-info {
+        display: flex;
+        gap: 3px;
+        align-items: center;
         font-size: 14px;
+        white-space: nowrap;
+        color: var(--text-color-weak-1);
+    }
+    
+    .route > .left-side > .bottom-info > .dot {
+        background-color: var(--text-color);
+        opacity: 0.6;
+        border-radius: 100px;
+        width: 4px;
+        min-width: 4px;
+        height: 4px;
+        margin: 0 2px;
+    }
+    
+    .route > .left-side > .bottom-info > .setter {
+        
+    }
+    
+    .route > .left-side > .bottom-info > .sent-icon {
+        color: var(--great-success-color);
+        margin-left: 2px;
     }
     
     .route > .stars {
@@ -114,11 +133,32 @@ ${() => GlobalState.routes
                     if (route.stars < filter.value) {
                         return false
                     }
+                } else if (filter.type === FILTER_TYPES.SETTER) {
+                    if (route.setters[0]?.id !== filter.value.id) {
+                        return false
+                    }
                 } else if (filter.type === FILTER_TYPES.LIKED_ROUTES) {
-                    if (!route.isLiked) {
+                    if (!route.liked) {
+                        return false
+                    }
+                } else if (filter.type === FILTER_TYPES.SENT_BY_ME) {
+                    if (!route.sent) {
+                        return false
+                    }
+                } else if (filter.type === FILTER_TYPES.NOT_SENT_BY_ME) {
+                    if (route.sent) {
                         return false
                     }
                 }
+            }
+            if (GlobalState.freeTextFilter != null) {
+                if (route.name.toLowerCase().includes(GlobalState.freeTextFilter.toLowerCase())) {
+                    return true
+                }
+                if (route.setters[0]?.nickname.toLowerCase().includes(GlobalState.freeTextFilter.toLowerCase())) {
+                    return true
+                }
+                return false
             }
             return true
         })
@@ -130,9 +170,9 @@ ${() => GlobalState.routes
             } else if (GlobalState.sorting === SORT_TYPES.RATING) {
                 return r1.stars < r2.stars ? 1 : -1
             } else if (GlobalState.sorting === SORT_TYPES.MOST_SENDS) {
-                return r1.createdAt < r2.createdAt ? 1 : -1 // TODO FIX
+                return r1.sends < r2.sends ? 1 : -1
             } else if (GlobalState.sorting === SORT_TYPES.LEAST_SENDS) {
-                return r1.createdAt < r2.createdAt ? 1 : -1 // TODO FIX
+                return r1.sends < r2.sends ? -1 : 1
             }
         })
         .map(route => html(route)`
@@ -141,7 +181,12 @@ ${() => GlobalState.routes
           no-ripple>
     <div class="left-side">
         <div class="name">${() => route.name}</div>
-        <div class="setter">${() => route.setter}</div>
+        <div class="bottom-info">
+            <div class="setter">${() => route.setters[0]?.nickname || "User deleted"},</div>
+            <!--<div class="dot"></div>-->
+            ${() => route.sends === 1 ? "1 send" : route.sends + " sends"}
+            ${() => route.sent && html()`<x-icon class="sent-icon" icon="fa fa-check"></x-icon>`}
+        </div>
     </div>
     
     <div class="stars">
@@ -151,8 +196,12 @@ ${() => GlobalState.routes
     </div>
 
     <x-button class="like-button"
-              liked=${() => route.isLiked} 
-              onclick=${() => e => {e.stopPropagation(); e.preventDefault(); toggleLikeRoute(route)}}>
+              liked=${() => route.liked} 
+              onclick=${() => e => {
+            e.stopPropagation();
+            e.preventDefault();
+            toggleLikeRoute(route)
+        }}>
         <x-icon icon="fa fa-heart"></x-icon>
     </x-button>
     

@@ -1,22 +1,14 @@
-import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
-import {enterRoutePage, GlobalState, loadRoutesAndHolds} from "./state.js";
-import "./components/text-input.js"
-import "./components/x-button.js"
-import "./components/x-icon.js"
-import {Bluetooth} from "./bluetooth.js";
-import {getUrlParams, updateUrlParams} from "../utilz/url-utilz.js";
+import {html, createYoffeeElement} from "../../libs/yoffee/yoffee.min.js"
+import {enterRoutePage, GlobalState, loadRoutesAndHolds} from "../state.js";
+import "../components/text-input.js"
+import "../components/x-button.js"
+import "../components/x-icon.js"
+import {Bluetooth} from "../bluetooth.js";
+import {getUrlParams, updateUrlParams} from "../../utilz/url-utilz.js";
+import {Api} from "../api.js";
 
-const CONNECTED_WALLS_LOCALSTORAGE_KEY = "connected_walls"
+createYoffeeElement("walls-page", () => {
 
-createYoffeeElement("connect-page", () => {
-    /** @type {Wall[]} */
-    let pastConnectedWalls = localStorage.getItem(CONNECTED_WALLS_LOCALSTORAGE_KEY)
-    if (pastConnectedWalls != null) {
-        pastConnectedWalls = JSON.parse(pastConnectedWalls)
-    }
-    let state = {
-        walls: pastConnectedWalls
-    };
 
     let urlParams = getUrlParams()
     // TODO: Fix the navigation bugs once and for alll!!
@@ -30,9 +22,8 @@ createYoffeeElement("connect-page", () => {
     async function chooseWall(wall) {
         try {
             GlobalState.loading = true
-            GlobalState.selectedWall = wall
             updateUrlParams({wall: undefined})
-            await loadRoutesAndHolds(true)
+            await loadRoutesAndHolds(true, wall.id)
 
             if (urlParams.route != null) {
                 await enterRoutePage(GlobalState.routes.find(r => r.id === urlParams.route))
@@ -43,20 +34,13 @@ createYoffeeElement("connect-page", () => {
     }
 
     async function connectToNearbyWall() {
-        let wall = await Bluetooth.connectToWall()
-        // Update localstorage past walls
-        if (!(pastConnectedWalls || []).find(existingWall => existingWall.id === wall.id)) {
-            pastConnectedWalls = [
-                ...(pastConnectedWalls || []),
-                wall
-            ]
-            localStorage.setItem(CONNECTED_WALLS_LOCALSTORAGE_KEY, JSON.stringify(pastConnectedWalls))
-        }
-        await chooseWall(wall)
+        let btWall = await Bluetooth.connectToWall()
+        await Api.syncToWall(btWall.id, btWall.name, btWall.brightness)
+        await chooseWall(btWall)
     }
 
     return html(GlobalState, state)`
-<link href="../style/scrollbar-style.css" rel="stylesheet">
+<link href="../../style/scrollbar-style.css" rel="stylesheet">
 <style>
     :host {
         display: flex;
@@ -70,11 +54,6 @@ createYoffeeElement("connect-page", () => {
         :host {
             padding: 20px 6% 0 6%;
         }
-    }
-    
-    #title {
-        position: relative;
-        font-size: 55px;
     }
     
     #walls {
@@ -117,11 +96,10 @@ createYoffeeElement("connect-page", () => {
         height: 30px;
         background-color: var(--secondary-color);
         gap: 10px;
+        margin-bottom: 30px;
     }
 </style>
-<div id="title">
-    WHOL
-</div>
+<header-bar></header-bar>
 <div id="walls">
     ${() => state.walls?.map(wall => html()`
     <x-button class="wall"

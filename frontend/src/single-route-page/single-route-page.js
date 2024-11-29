@@ -1,11 +1,11 @@
-import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
-import {exitRoutePage, GlobalState, loadRoutesAndHolds, WallImage} from "./state.js"
-import {Api} from "./api.js"
-import {showToast} from "../utilz/toaster.js";
-import {Bluetooth} from "./bluetooth.js";
-import "./components/text-input.js"
-import "./components/x-button.js"
-import "./components/x-tag.js"
+import {html, createYoffeeElement} from "../../libs/yoffee/yoffee.min.js"
+import {exitRoutePage, GlobalState, toggleSentRoute, WallImage} from "../state.js"
+import {Api} from "../api.js"
+import {showToast} from "../../utilz/toaster.js";
+import {Bluetooth} from "../bluetooth.js";
+import "../components/text-input.js"
+import "../components/x-button.js"
+import "../components/x-tag.js"
 
 createYoffeeElement("single-route-page", (props, self) => {
     let state = {
@@ -16,25 +16,35 @@ createYoffeeElement("single-route-page", (props, self) => {
         GlobalState.selectedRoute.isNew = undefined
     }
 
+    const setterId = () => {
+        if (GlobalState.selectedRoute != null) {
+            return GlobalState.selectedRoute.setters[0]?.id
+        }
+    }
+    const setterName = () => {
+        if (GlobalState.selectedRoute != null) {
+            let setter = GlobalState.selectedRoute.setters[0]
+            if (setter == null) {
+                return
+            }
+            return setter.id === GlobalState.user.id ? "Me" : setter.nickname
+        }
+    }
+
     const saveRoute = async () => {
         if (GlobalState.selectedRoute == null) {
             // This can happen when navigating back without focusing out of the input
             return
         }
         let selectedRoute = GlobalState.selectedRoute
-        GlobalState.loading = true
         let name = self.shadowRoot.querySelector("#route-name-input").getValue()
         let grade = self.shadowRoot.querySelector("#route-grade-input").getValue()
-        let setter = self.shadowRoot.querySelector("#route-setter-input").getValue()
 
-
-        localStorage.setItem("setterName", setter)
         console.log(`Updating route to name: ${name}, grade: ${grade}`)
-        await Api.updateRoute(selectedRoute.id, name, grade, setter)
+        await Api.updateRoute(selectedRoute.id, name, grade)
 
         selectedRoute.name = name
         selectedRoute.grade = grade
-        selectedRoute.setter = setter
     }
 
     // set holds in route
@@ -204,14 +214,40 @@ createYoffeeElement("single-route-page", (props, self) => {
     
     #route-name-input {   
         font-size: 20px;
-        --padding: 0 20px;
+        padding: 0;
     }
     
-    #route-setter-input {
+    #setter-container {
+        display: flex;
+        align-items: center;
+        gap: 4px;
         height: 30px;
         font-size: 14px;
         opacity: 0.8;
-        --selection-background: #0000ff15;
+    }
+    
+    #setter-button {
+        gap: 6px;
+        padding: 1px 6px;
+        box-shadow: none;
+    }
+    
+    x-dialog {
+        background-color: var(--background-color);
+        color: var(--text-color);
+    }
+    
+    #setter-dialog > .item {
+        padding: 10px 20px;
+        cursor: pointer;
+    }
+    
+    #setter-dialog > .item:hover {
+        background-color: var(--hover-color);
+    }
+    
+    #setter-dialog > .item[data-selected] {
+        color: var(--secondary-color);
     }
     
     .title-text {
@@ -220,7 +256,7 @@ createYoffeeElement("single-route-page", (props, self) => {
     }
     
     .header-input {
-        --background-color: transparent;
+        background-color: transparent;
         width: -webkit-fill-available;
         /*border: 1px solid #00000010;*/
     }
@@ -231,7 +267,7 @@ createYoffeeElement("single-route-page", (props, self) => {
     }
     
     #header > #route-grade-input {
-        --padding: 0;
+        padding: 0;
         width: 40px;
         height: fit-content;
     }
@@ -250,11 +286,14 @@ createYoffeeElement("single-route-page", (props, self) => {
         height: inherit;
         position: relative;
         /*margin-bottom: 70px;*/
-        /*background-image: url("../res/wall.jpg");*/
+        /*background-image: url("../res/wall.jpg"); DEFINED BELOW */
         background-size: 100% 100%; /* Stretches the image to fit the div exactly */
         background-position: center; /* Centers the image in the div */
         background-repeat: no-repeat; /* Prevents tiling */
         background-color: #ffffffe0;
+        max-width: 75vh;
+        align-self: center;
+        width: -webkit-fill-available;
     }
     
     #holds-container {
@@ -318,6 +357,10 @@ createYoffeeElement("single-route-page", (props, self) => {
         background-color: var(--secondary-color);
     }
     
+    #bottom-buttons > #log-send-button[active] {
+        background-color: var(--great-success-color);
+    }
+    
     #bottom-buttons > #star-button {
         /*transform: translate(-50%, 0);*/
     }
@@ -336,7 +379,9 @@ createYoffeeElement("single-route-page", (props, self) => {
     #plus-button {
         background-color: var(--secondary-color);
     }
+    
 </style>
+
 <style>
     #route {
         background-image: ${WallImage == null ? null : `url(${WallImage})`};
@@ -345,7 +390,7 @@ createYoffeeElement("single-route-page", (props, self) => {
 ${() => GlobalState.loading ? html()`
 <style>
     /* Loader */
-    #title::after {
+    #header::after {
         content: "";
         position: absolute;
         bottom: 0;
@@ -355,6 +400,7 @@ ${() => GlobalState.loading ? html()`
         background-color: var(--text-color-weak-2);
         animation: loading 2s infinite;
         margin-bottom: -2px;
+        z-index: 1;
     }
     
     @keyframes loading {
@@ -374,19 +420,41 @@ ${() => GlobalState.loading ? html()`
     <div id="inputs-container">
         <text-input id="route-name-input"
                     class="title-text header-input"
-                    value=${() => GlobalState.selectedRoute?.name || GlobalState.selectedWall.name}
+                    value=${() => GlobalState.selectedRoute?.name || "Configuring wall"}
                     changed=${() => () => saveRoute()}
                     submitted=${() => () => console.log("Submitted.")}
                     onfocus=${e => !e.target.selected && e.target.select()}
         ></text-input>
+        
         ${() => GlobalState.configuringHolds ? "" : html()`
-        <text-input id="route-setter-input"
-                    class="title-text header-input"
-                    value=${() => GlobalState.selectedRoute?.setter || "Configuring wall"}
-                    changed=${() => () => saveRoute()}
-                    submitted=${() => () => console.log("Submitted.")}
-                    onfocus=${e => !e.target.selected && e.target.select()}
-        ></text-input>
+        <div id="setter-container">
+            <div id="setter-prefix">Setter:</div>
+            <x-button id="setter-button"
+                      tabindex="0"
+                      onmousedown=${() => () => {
+                          let _dropdown = self.shadowRoot.querySelector("#setter-dialog")
+                          let _button = self.shadowRoot.querySelector("#setter-button")
+                          _dropdown.toggle(_button, true)
+                      }}
+                      onblur=${() => requestAnimationFrame(() => self.shadowRoot.querySelector("#setter-dialog").close())}>
+                ${() => setterName()}
+                <x-icon icon="fa fa-caret-down"></x-icon>
+            </x-button>
+        </div>
+        <x-dialog id="setter-dialog">
+            ${() => [GlobalState.user, ...GlobalState.selectedWall.users.filter(user => user.id !== GlobalState.user.id)]
+            .map(user => html()`
+            <div class="item"
+                 data-selected=${() => setterId() === user.id}
+                 onclick=${async () => {
+                     GlobalState.selectedRoute.setters = [{id: user.id, nickname: user.nickname}]
+                     self.shadowRoot.querySelector("#setter-dialog").close()
+                     await Api.updateSetter(GlobalState.selectedRoute.id, user.id)
+                 }}>
+                ${GlobalState.user === user ? "Me" : user.nickname}
+            </div>
+            `)}
+        </x-dialog>
         `}
     </div>
     ${() => GlobalState.configuringHolds ? "" : html()`
@@ -433,8 +501,7 @@ ${() => GlobalState.loading ? html()`
     <x-button id="delete-button"
               onclick=${async () => {
                   if (confirm(`U gonna destroy ${GlobalState.selectedRoute.name}. Proceed??`)) {
-                      await api.deleteRoute(GlobalState.selectedRoute.id)
-                      await loadRoutesAndHolds()
+                      await Api.deleteRoute(GlobalState.selectedRoute.id)
                       await exitRoutePage()
                   }
               }}>
@@ -455,6 +522,14 @@ ${() => GlobalState.loading ? html()`
                   }
               }}>
         <x-icon icon="fa fa-edit"></x-icon>
+    </x-button>
+    `}
+    
+    ${() => !GlobalState.configuringHolds && html()`
+    <x-button id="log-send-button"
+              active=${() => GlobalState.selectedRoute?.sent}
+              onclick=${() => toggleSentRoute(GlobalState.selectedRoute)}>
+        <x-icon icon="fa fa-check"></x-icon>
     </x-button>
     `}
     

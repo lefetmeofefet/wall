@@ -13,7 +13,7 @@ body[theme="light"] {
 body {
     --secondary-color-rgb: 67, 185, 194;
     --text-on-secondary: rgb(240, 240, 240);
-
+    
     --background-color: rgb(var(--background-color-rgb));
     --secondary-color: rgb(var(--secondary-color-rgb));
     --secondary-color-weak-1: rgb(var(--secondary-color-rgb), 0.5);
@@ -30,4 +30,6 @@ body {
     --background-color-3: rgb(var(--text-color-rgb), 0.050);
     --border: 2px solid var(--text-color-weak-3);
     --love-color: #FF4F68;
+    --great-success-color: #39ac11;
+    --danger-zone-color: #ac1111;
 }

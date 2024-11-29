@@ -22,25 +22,27 @@ customElements.define("text-input", class extends YoffeeElement {
                     display: flex;
                     border-radius: 5px;
                     font-size: 18px;
+                    caret-color: #404040;
+                    padding: 10px 20px;
                 }
                 
                 input {
                     width: -webkit-fill-available;
                     width: -moz-available;
+                    min-width: 0;
                     border: none;
                     outline: none;
-                    background-color: var(--background-color, #00000010);
-                    padding: var(--padding, 10px 20px);
+                    background-color: transparent;
+                    padding: 0;
                     
                     font-size: inherit;
-                    border-radius: inherit;
-                    caret-color: #404040;
+                    caret-color: inherit;
                     color: inherit;
                     font-family: inherit;
                 }
                 
                 ::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
-                    color: #404040;
+                    color: var(--placeholder-color, #404040);
                     opacity: 0.6; /* Firefox */
                     user-select: none;
                 }
@@ -68,27 +70,48 @@ customElements.define("text-input", class extends YoffeeElement {
             }
             `}
             </style>
+            <slot name="before"></slot>
             <input type="${() => this.props.type}"
                    placeholder="${() => this.props.placeholder}"
-                   onchange=${() => this.props.changed && this.props.changed()}
+                   onchange=${() => this.props.changed && this.props.changed(this.value)}
                    onfocus=${() => this.props.focused && this.props.focused()}
                    onfocusout=${() => this.selected = false}
                    onkeyup=${e => {
-            this.props.keyup && this.props.keyup();
-            this.calcRtl(e)
-        }}
-                   onkeydown=${e => this.props.keydown && this.props.keydown()}
+                       this.props.keyup && this.props.keyup();
+                       this.calcRtl(e)
+                   }}
+                   onkeydown=${e => {
+                       let value = this.value
+                       if (e.key === 'Backspace') {
+                           value = value.slice(0, -1);
+                       } else if (e.key.length === 1) {
+                           // ignore special keys like "Control" and "Arrow" etc.
+                           value = value + e.key;
+                       }
+                       
+                       if (e.key === 'Enter') {
+                           this.props.submitted && this.props.submitted(value)
+                       } else {
+                           
+                       }
+                       this.props.keydown && this.props.keydown(value)
+                   }}
                    onkeypress=${e => {
-            if (e.key === 'Enter') {
-                this.props.submitted && this.props.submitted()
-            }
-            this.props.keydown && this.props.keydown()
-        }}>
+                       if (e.key === 'Enter') {
+                           this.props.submitted && this.props.submitted(this.value)
+                       }
+                       this.props.keypress && this.props.keypress(this.value)
+                   }}>
+            <slot name="after"></slot>
         `
     }
 
     getValue() {
         return this.shadowRoot.querySelector("input").value
+    }
+
+    get value() {
+        return this.getValue()
     }
 
     setValue(value) {

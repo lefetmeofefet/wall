@@ -7,8 +7,8 @@
     <meta name="viewport"
           content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="description" content="HomeWall your life with WHOL some!">
-    <meta name="keywords" content="Wall, climbing">
+    <meta name="description" content="Make your wall WHOL!">
+    <meta name="keywords" content="Wall, climbing, rock climbing, klettern">
     <meta name="author" content="WHOL INC">
 
     <!--Favicon from https://favicon.io/-->
@@ -22,6 +22,9 @@
     <link href="https://fonts.googleapis.com/css?family=Roboto+Mono&display=swap" rel="stylesheet">
     <link href='https://fonts.googleapis.com/css?family=Heebo' rel='stylesheet'>
     <link href='https://fonts.googleapis.com/css?family=Poppins' rel='stylesheet'>
+
+    <!--Google sign in-->
+    <script src="https://accounts.google.com/gsi/client" async></script>
 
     <!--Styles-->
     <link href="./style/scrollbar-style.css" rel="stylesheet">
@@ -39,9 +42,6 @@
             height: 100%;
         }
     </style>
-
-    <!--Google sign in-->
-<!--    <script src="https://accounts.google.com/gsi/client" async></script>-->
 </head>
 
 <body theme="light">
@@ -82,34 +82,7 @@
 </script>
 
 <!--Sleep prevention-->
-<script>
-    let wakeLock = null
-
-    // Function to request a wake lock
-    async function requestWakeLock() {
-        try {
-            wakeLock = await navigator.wakeLock.request('screen')
-            console.log("Wake lock acquired")
-
-            wakeLock.addEventListener('release', () => {
-                console.log('Wake lock was released');
-                wakeLock = null
-            })
-        } catch (err) {
-            console.error(`Wake lock request failed: ${err.name}, ${err.message}`);
-        }
-    }
-
-    // Re-request wake lock when the page becomes visible again
-    document.addEventListener('visibilitychange', async () => {
-        if (wakeLock == null && document.visibilityState === 'visible') {
-            await requestWakeLock();
-        }
-    });
-
-    // Initial wake lock request when the page loads
-    requestWakeLock();
-</script>
+<script src="./utilz/wakelock.js" type="module"></script>
 
 <!--App-->
 <script src="src/wall-app.js" type="module"></script>

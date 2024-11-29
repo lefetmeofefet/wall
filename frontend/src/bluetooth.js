@@ -1,4 +1,4 @@
-import {GlobalState} from "./state.js";
+import {exitWall, GlobalState} from "./state.js";
 import {showToast} from "../utilz/toaster.js";
 
 const WALL_SERVICE_ID = '5c8468d0-024e-4a0c-a2f1-4742299119e3'
@@ -64,7 +64,11 @@ async function connectToWall(secondTry) {
         )
         GlobalState.bluetoothConnected = true
         let wallInfo = await getWallInfo()
-
+        if (GlobalState.selectedWall != null && wallInfo.id !== GlobalState.selectedWall.id) {
+            showToast("Nearby wall is not this wall!", {isError: true})
+            await exitWall()
+            return Promise.reject("Nearby wall is not this wall")
+        }
         return {
             id: wallInfo.id,
             name: wallName,

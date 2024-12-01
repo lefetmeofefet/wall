@@ -221,13 +221,13 @@ void setup() {
 
 
 int secondsWithoutConnection = 0;
-const CLEAR_LEDS_TIMEOUT_SECONDS = 3600;
+const int CLEAR_LEDS_TIMEOUT_SECONDS = 3600;
 void loop() {
     delay(1000);
 
     // Clear the leds if no device is connected for some time
     if (devicesConnected == 0) {
-      secondsWithoutConnection += 1
+      secondsWithoutConnection += 1;
       if (secondsWithoutConnection == CLEAR_LEDS_TIMEOUT_SECONDS) {
         clearLeds();
       }

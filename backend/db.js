@@ -176,7 +176,7 @@ async function getRoutes(wallId, whereClause, parameters) {
            route.stars as stars,
            sends as sends,
            [setter IN setters | {id: setter.id, nickname: setter.nickname}] AS setters,
-           [i IN range(0, size(holds) - 1) | {id: holds[i].id, holdType: holdEdges[i].holdType}] AS holds
+           [i IN range(0, size(holds) - 1) | {id: holds[i].id, ledId: holds[i].ledId, holdType: holdEdges[i].holdType}] AS holds
     ORDER BY route.createdAt ASC
     `, {wallId, ...(parameters || {})}
     )

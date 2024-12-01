@@ -64,7 +64,7 @@ async function connectToWall(secondTry) {
         )
         GlobalState.bluetoothConnected = true
         let wallInfo = await getWallInfo()
-        if (GlobalState.selectedWall != null && wallInfo.id !== GlobalState.selectedWall.id) {
+        if (GlobalState.selectedWall != null && wallInfo.id !== GlobalState.selectedWall.macAddress) {
             showToast("Nearby wall is not this wall!", {isError: true})
             await exitWall()
             return Promise.reject("Nearby wall is not this wall")
@@ -182,7 +182,7 @@ function getLedRGB(isOn, holdType) {
         } else if (holdType === "finish") {
             return {r: 255, g: 0, b: 0}
         }
-        return {r: 0, g: 200, b: 200}
+        return {r: 0, g: 150, b: 220}
     }
     return {r: 0, g: 0, b: 0}
 }

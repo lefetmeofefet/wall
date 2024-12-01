@@ -1,12 +1,12 @@
 import {
     addHoldToRoute,
-    createHold,
+    createHold, createLedlessWall,
     createRoute, deleteHold,
     deleteRoute,
     getHolds,
     getRoutes, getUserById,
     getWallInfo, getWalls, moveHold, removeHoldFromRoute, setRouteStars, setUserNickname, setWallBrightness,
-    setWallImage, setWallName, syncToWall, updateLikedStatus,
+    setWallImage, setWallName, syncToWall, syncToWallByCode, updateLikedStatus,
     updateRoute, updateSentStatus, updateSetter
 } from "../db.js";
 import express from "express";
@@ -24,10 +24,22 @@ router.post('/setNickname', async (req, res) => {
     res.json({status: 'success'})
 })
 
+router.post('/createLedlessWall', async (req, res) => {
+    const {wallName} = req.body
+    let wall = await createLedlessWall(wallName, req.userId)
+    res.json(wall.id)
+})
+
 router.post('/syncToWall', async (req, res) => {
-    const {wallId, wallName, brightness} = req.body
-    await syncToWall(wallId, wallName, brightness, req.userId)
-    res.json({status: 'success'})
+    const {macAddress, wallName, brightness} = req.body
+    let wall = await syncToWall(macAddress, wallName, brightness, req.userId)
+    res.json(wall.id)
+})
+
+router.post('/syncToWallByCode', async (req, res) => {
+    const {code} = req.body
+    let wall = await syncToWallByCode(code.toUpperCase(), req.userId)
+    res.json(wall.id)
 })
 
 router.post('/getWalls', async (req, res) => {

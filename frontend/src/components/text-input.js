@@ -82,6 +82,9 @@ customElements.define("text-input", class extends YoffeeElement {
                    }}
                    onkeydown=${e => {
                        let value = this.value
+                       if (value == null) {
+                           value = ""
+                       }
                        if (e.key === 'Backspace') {
                            value = value.slice(0, -1);
                        } else if (e.key.length === 1) {

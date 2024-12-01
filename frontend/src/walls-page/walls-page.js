@@ -17,11 +17,11 @@ createYoffeeElement("walls-page", () => {
     //     }
     // }
 
-    async function chooseWall(wall) {
+    async function chooseWall(wallId) {
         try {
             GlobalState.loading = true
             updateUrlParams({wall: undefined})
-            await loadRoutesAndHolds(true, wall.id)
+            await loadRoutesAndHolds(true, wallId)
 
             if (urlParams.route != null) {
                 await enterRoutePage(GlobalState.routes.find(r => r.id === urlParams.route))
@@ -33,8 +33,22 @@ createYoffeeElement("walls-page", () => {
 
     async function connectToNearbyWall() {
         let btWall = await Bluetooth.connectToWall()
-        await Api.syncToWall(btWall.id, btWall.name, btWall.brightness)
-        await chooseWall(btWall)
+        let macAddress = btWall.id
+        let wallId = await Api.syncToWall(macAddress, btWall.name, btWall.brightness)
+        await chooseWall(wallId)
+    }
+
+    async function createLedlessWall() {
+        let wallId = await Api.createLedlessWall("WHOL")
+        await chooseWall(wallId)
+    }
+
+    async function enterWithCode() {
+        let code = prompt("What's the wall code?")
+        if (code != null) {
+            let wallId = await Api.syncToWallByCode(code)
+            await chooseWall(wallId)
+        }
     }
 
     return html(GlobalState)`
@@ -78,6 +92,10 @@ createYoffeeElement("walls-page", () => {
         border-top: 1px solid var(--text-color-weak-3);
     }
     
+    .wall > .name {
+        font-size: 20px;
+    }
+    
     .wall > .identifier {
         color: var(--text-color-weak-1);
     }
@@ -86,32 +104,58 @@ createYoffeeElement("walls-page", () => {
         font-size: 20px;
     }
     
-    #connect-button {
+    .big-button {
         margin-top: 20px;
         border-radius: 1000px;
-        color: var(--text-color-on-secondary);
-        width: fit-content;
         height: 30px;
-        background-color: var(--secondary-color);
         gap: 10px;
+        width: auto;
+        max-width: 400px;
+    }
+    
+    #connect-button {
+        color: var(--text-color-on-secondary);
+        background-color: var(--secondary-color);
+    }
+    
+    #create-wall-button {
+        background-color: var(--background-color-3);
+        color: var(--text-color);
+    }
+    
+    #enter-code-button {
+        background-color: var(--background-color-3);
         margin-bottom: 30px;
     }
 </style>
 <header-bar></header-bar>
 <div id="walls">
-    ${() => state.walls?.map(wall => html()`
+    ${() => GlobalState.walls?.map(wall => html()`
     <x-button class="wall"
-              onclick=${() => chooseWall(wall)}>
+              onclick=${() => chooseWall(wall.id)}>
         <div class="name">${() => wall.name}</div>
-        <div class="identifier">${() => wall.id}</div>
+        <div class="identifier">${() => wall.code}</div>
     </x-button>
     `)}
 </div>
 
 <x-button id="connect-button"
+          class="big-button"
           onclick=${async () => await connectToNearbyWall()}>
     Connect to nearby wall
-    <x-icon icon="fa fa-sync ${() => GlobalState.loading ? "fa-spin" : ""}"></x-icon>
+    <x-icon icon="fa fa-lightbulb"></x-icon>
+</x-button>
+<x-button id="create-wall-button"
+          class="big-button"
+          onclick=${async () => await createLedlessWall()}>
+    Create wall without leds
+    <x-icon icon="fa fa-plus"></x-icon>
+</x-button>
+<x-button id="enter-code-button"
+          class="big-button"
+          onclick=${async () => await enterWithCode()}>
+    Join by code
+    <x-icon icon="fa fa-key"></x-icon>
 </x-button>
 `
 });

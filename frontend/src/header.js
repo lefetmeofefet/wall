@@ -22,6 +22,18 @@ createYoffeeElement("header-bar", (props, self) => {
         searchMode: false
     }
 
+    self.onConnect = () => {
+        adjustTitleSize()
+    }
+
+    function adjustTitleSize() {
+        let title = self.shadowRoot.querySelector("#title")
+        const TITLE_WIDTH_PX = 55
+        if (title != null && title.offsetWidth !== title.scrollWidth) {
+            title.style.fontSize = TITLE_WIDTH_PX * (title.offsetWidth / title.scrollWidth) + "px"
+        }
+    }
+
     // Remember the filter value if going back to this page
     if (GlobalState.freeTextFilter != null) {
         state.searchMode = true
@@ -164,6 +176,7 @@ createYoffeeElement("header-bar", (props, self) => {
         box-shadow: none;
         font-size: 16px;
         opacity: 0.5;
+        color: var(--text-color);
         padding: 10px;
     }
     #settings-container > .settings-item {
@@ -241,9 +254,7 @@ ${() => state.searchMode ? html()`
 </div>
 ${() => GlobalState.selectedWall != null && html()`
 <x-button id="refresh-button"
-          onclick=${async () => {
-        await loadRoutesAndHolds()
-    }}>
+          onclick=${async () => await loadRoutesAndHolds()}>
     <x-icon icon="fa fa-sync ${() => GlobalState.loading ? "fa-spin" : ""}"></x-icon>
 </x-button>
 <x-button id="search-button"
@@ -277,6 +288,9 @@ ${() => GlobalState.selectedWall != null && html()`
                 if (newNickname != null) {
                     await Api.setNickname(newNickname)
                     GlobalState.user = {...GlobalState.user, nickname: newNickname}
+                    if (GlobalState.selectedWall != null) {
+                        await loadRoutesAndHolds()
+                    }
                 }
             }}>
             Hi, ${() => GlobalState.user.nickname}!
@@ -284,6 +298,8 @@ ${() => GlobalState.selectedWall != null && html()`
                 <x-icon icon="fa fa-edit"></x-icon>
             </x-button>
         </div>
+        
+        ${() => GlobalState.selectedWall != null && html()`
         <x-button class="settings-item"
                   onclick=${() => enterConfigureHoldsPage()}>
             <x-icon icon="fa fa-hand-rock"></x-icon>
@@ -293,6 +309,26 @@ ${() => GlobalState.selectedWall != null && html()`
                   onclick=${() => uploadImage()}>
             <x-icon icon="fa fa-file-image"></x-icon>
             Change wall image
+        </x-button>
+        <x-button class="settings-item"
+                  id="rename-wall"
+                  onclick=${async () => {
+                      let newWallName = prompt("What would you like to call your wall?")
+                      if (newWallName != null) {
+                          GlobalState.loading = true
+                          try {
+                              await Bluetooth.setWallName(newWallName)
+                              await Api.setWallName(newWallName)
+                              GlobalState.selectedWall.name = newWallName
+                              GlobalState.selectedWall = {...GlobalState.selectedWall}
+                              requestAnimationFrame(() => adjustTitleSize())
+                          } finally {
+                              GlobalState.loading = false
+                          }
+                      }
+                  }}>
+            <x-icon icon="fa fa-no-icon-fk"></x-icon>
+            Rename wall
         </x-button>
         <x-button class="settings-item"
                   onclick=${async () => {
@@ -311,6 +347,24 @@ ${() => GlobalState.selectedWall != null && html()`
                 ${() => Math.round((GlobalState.selectedWall?.brightness / 255) * 100)}%
             </div>
         </x-button>
+        <x-button class="settings-item"
+                  id="auto-leds">
+            <x-icon icon="fa fa-bolt"></x-icon>
+            <div>Auto leds</div>
+            <x-switch value=${() => GlobalState.autoLeds}
+                      style="--circle-size: 20px; margin-left: auto; padding-left: 10px;"
+                      switched=${() => () => setAutoLeds(!GlobalState.autoLeds)}>
+            </x-switch>
+        </x-button>
+        <x-button class="settings-item"
+                  id="snakeio"
+                  onclick=${() => snakeMeUp()}>
+            <x-icon icon="fa fa-question"></x-icon>
+            Snake me up
+        </x-button>
+        `}
+        
+        
         <div id="theme-toggle"
              class="settings-item">
             <x-icon icon=${() => GlobalState.darkTheme ? "fa fa-moon" : "fa fa-sun"}></x-icon>
@@ -331,51 +385,20 @@ ${() => GlobalState.selectedWall != null && html()`
             Toggle fullscreen
         </x-button>
         <x-button class="settings-item"
-                  id="auto-leds">
-            <x-icon icon="fa fa-bolt"></x-icon>
-            <div>Auto leds</div>
-            <x-switch value=${() => GlobalState.autoLeds}
-                      style="--circle-size: 20px; margin-left: auto; padding-left: 10px;"
-                      switched=${() => () => setAutoLeds(!GlobalState.autoLeds)}>
-            </x-switch>
+                  id="exit-wall"
+                  onclick=${() => signOut()}>
+            <x-icon icon="fa fa-sign-out-alt" style="transform: rotate(180deg)"></x-icon>
+            Sign out
         </x-button>
-        <x-button class="settings-item"
-                  id="snakeio"
-                  onclick=${() => snakeMeUp()}>
-            <x-icon icon="fa fa-question"></x-icon>
-            Snake me up
-        </x-button>
-        <x-button class="settings-item"
-                  id="rename-wall"
-                  onclick=${async () => {
-                      let newWallName = prompt("What would you like to call your wall?")
-                      if (newWallName != null) {
-                          GlobalState.loading = true
-                          try {
-                              await Bluetooth.setWallName(newWallName)
-                              await Api.setWallName(newWallName)
-                              GlobalState.selectedWall.name = newWallName
-                              GlobalState.selectedWall = {...GlobalState.selectedWall}
-                          } finally {
-                              GlobalState.loading = false
-                          }
-                      }
-                  }}>
-            <x-icon icon="fa fa-no-icon-fk"></x-icon>
-            Rename wall
-        </x-button>
+        
+        ${() => GlobalState.selectedWall != null && html()`
         <x-button class="settings-item"
                   id="exit-wall"
                   onclick=${() => exitWall()}>
             <x-icon icon="fa fa-no-icon-fk"></x-icon>
             Exit wall
         </x-button>
-        <x-button class="settings-item"
-                  id="exit-wall"
-                  onclick=${() => signOut()}>
-            <x-icon icon="fa fa-sign-out-alt" style="transform: rotate(180deg)"></x-icon>
-            Sign out
-        </x-button>
+        `}
     </div>
 </x-dialog>
 `

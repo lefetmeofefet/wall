@@ -182,7 +182,7 @@ function getLedRGB(isOn, holdType) {
         } else if (holdType === "finish") {
             return {r: 255, g: 0, b: 0}
         }
-        return {r: 67, g: 185, b: 194}
+        return {r: 0, g: 200, b: 200}
     }
     return {r: 0, g: 0, b: 0}
 }
@@ -196,11 +196,11 @@ async function highlightRoute(route) {
     finishLedGroup.i = []
     for (let hold of route.holds) {
         if (hold.holdType === "start") {
-            startLedGroup.i.push(hold.id)
+            startLedGroup.i.push(hold.ledId)
         } else if (hold.holdType === "finish") {
-            finishLedGroup.i.push(hold.id)
+            finishLedGroup.i.push(hold.ledId)
         } else {
-            normalLedGroup.i.push(hold.id)
+            normalLedGroup.i.push(hold.ledId)
         }
     }
     await sendBTMessage({
@@ -228,7 +228,7 @@ async function setHoldState(hold) {
         snakeMode: false,
         led: {
             ...getLedRGB(hold.inRoute, hold.holdType),
-            i: hold.id
+            i: hold.ledId
         }
     })
 }

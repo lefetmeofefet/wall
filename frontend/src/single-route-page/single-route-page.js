@@ -471,7 +471,12 @@ ${() => GlobalState.loading ? html()`
     `}
 </div>
 <div id="route">
-    <div id="holds-container">
+    <div id="holds-container"
+         oncontextmenu = ${e => {
+             e.preventDefault()
+             e.stopPropagation() 
+             e.stopImmediatePropagation()
+         }}>
         ${() => GlobalState.holds
         .filter(hold => state.editMode || GlobalState.configuringHolds || hold.inRoute)
         .map(hold => html(hold)`

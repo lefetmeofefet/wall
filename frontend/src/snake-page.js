@@ -20,11 +20,11 @@ createYoffeeElement("snake-page", (props, self) => {
     let maxY = Math.max(...GlobalState.holds.map(hold => hold.y))
 
     async function snakeHold(hold) {
-        await Bluetooth.setSnakeModeLed(color.r, color.g, color.b, hold.id)
+        await Bluetooth.setSnakeModeLed(color.r, color.g, color.b, hold.ledId)
     }
 
     async function unsnakeHold(hold) {
-        await Bluetooth.setSnakeModeLed(0, 0, 0, hold.id)
+        await Bluetooth.setSnakeModeLed(0, 0, 0, hold.ledId)
     }
 
     let currentHold
@@ -44,7 +44,7 @@ createYoffeeElement("snake-page", (props, self) => {
         if (playerColor.r === color.r && playerColor.g === color.g && playerColor.b === color.b) {
             let ledGroup = {r: 0, g: 0, b: 0, i: []}
             for (let hold of snakeHolds) {
-                ledGroup.i.push(hold.id)
+                ledGroup.i.push(hold.ledId)
             }
             await Bluetooth.setLeds([ledGroup])
             randomizeSnake()

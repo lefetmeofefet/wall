@@ -49,10 +49,21 @@ async function readNeo4jSingleResult(query, params) {
     return results[0]
 }
 
+function generateCode(length = 8) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    let result = ''
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length)
+        result += characters[randomIndex]
+    }
+    return result
+}
+
 async function getWalls(userId) {
     return await readNeo4j(`
     MATCH (wall:Wall) -[:has]-> (user:User{id: $userId})
     RETURN wall.id as id,
+           wall.code as code,
            wall.name as name,
            wall.createdAt as createdAt
     ORDER BY wall.createdAt ASC
@@ -60,28 +71,49 @@ async function getWalls(userId) {
     )
 }
 
-async function syncToWall(wallId, wallName, brightness, userId) {
+async function createLedlessWall(wallName, userId) {
     return await queryNeo4jSingleResult(`
-    MERGE (wall:Wall{id: $wallId})
-    ON CREATE SET wall.holdCounter = -1,
+    CREATE (wall:Wall{
+        macAddress: null,
+        id: randomUUID(),
+        code: "${generateCode()}",
+        name: $wallName,
+        brightness: 50,
+        createdAt: timestamp()
+    })
+    WITH wall
+    MATCH (user:User{id: $userId})
+    MERGE (wall) -[:has]-> (user)
+    RETURN wall.id as id
+    `, {wallName, userId})
+}
+
+async function syncToWall(macAddress, wallName, brightness, userId) {
+    return await queryNeo4jSingleResult(`
+    MERGE (wall:Wall{macAddress: $macAddress})
+    ON CREATE SET wall.id = randomUUID(),
+                  wall.code = "${generateCode()}",
                   wall.name = $wallName,
                   wall.brightness = $brightness,
                   wall.createdAt = timestamp()
     WITH wall
     MATCH (user:User{id: $userId})
     MERGE (wall) -[:has]-> (user)
-    RETURN wall.image as image,
-           wall.holdCounter = -1 as noHolds,
-           wall.createdAt as createdAt
-    `, {wallId, wallName, brightness, userId})
+    RETURN wall.id as id
+    `, {macAddress, wallName, brightness, userId})
+}
+
+async function syncToWallByCode(code, userId) {
+    return await queryNeo4jSingleResult(`
+    MATCH (wall:Wall{code: $code}), (user:User{id: $userId})
+    MERGE (wall) -[:has]-> (user)
+    RETURN wall.id as id
+    `, {code, userId})
 }
 
 async function getWallInfo(wallId, userId) {
     return await queryNeo4jSingleResult(`
-    MERGE (wall:Wall{id: $wallId})
-    ON CREATE SET wall.holdCounter = -1,
-                  wall.createdAt = timestamp()
-    WITH wall
+    MATCH (wall:Wall{id: $wallId})
     OPTIONAL MATCH (wall) -[:has]-> (user:User)
     WITH wall, collect(user) as users
     WITH wall, users, [u IN users WHERE u.id = $userId][0] AS user
@@ -91,10 +123,11 @@ async function getWallInfo(wallId, userId) {
          COLLECT(CASE WHEN TYPE(e) = "sent" THEN route.id ELSE null END) AS sentRouteIds,
          COLLECT(CASE WHEN TYPE(e) = "liked" THEN route.id ELSE null END) AS likedRouteIds
     RETURN wall.id as id,
+           wall.macAddress as macAddress,
+           wall.code as code,
            wall.image as image,
            wall.name as name,
            wall.brightness as brightness,
-           wall.holdCounter = -1 as noHolds,
            wall.createdAt as createdAt,
            sentRouteIds as sentRouteIds,
            likedRouteIds as likedRouteIds,
@@ -235,6 +268,7 @@ async function getHolds(wallId) {
     return await readNeo4j(`
     MATCH (wall:Wall{id: $wallId}) -[:has]-> (hold:Hold)
     RETURN hold.id as id,
+           hold.ledId as ledId,
            hold.x as x,
            hold.y as y
     `, {wallId})
@@ -244,19 +278,26 @@ async function createHold(wallId) {
     return await queryNeo4jSingleResult(`
     // We want sequential ids so we use Counter node
     MATCH (wall:Wall{id: $wallId})
-    SET wall.holdCounter = wall.holdCounter + 1
-    WITH wall
     
     CREATE (hold:Hold{
-        id: wall.holdCounter,
+        id: randomUUID(),
         x: 0.5,
-        y: 0.5
+        y: 0.5,
+        ledId: NULL
     })
     CREATE (wall) -[:has]-> (hold)
     RETURN hold.id as id,
+           hold.ledId as ledId,
            hold.x as x,
            hold.y as y
     `, {wallId})
+}
+
+async function setHoldLed(wallId, holdId, ledId) {
+    await queryNeo4j(`
+    MATCH (wall:Wall{id: $wallId}) -[:has]-> (hold:Hold{id: $holdId})
+    SET hold.ledId = $ledId
+    `, {wallId, holdId, ledId})
 }
 
 async function moveHold(wallId, holdId, x, y) {
@@ -363,7 +404,9 @@ export {
     queryNeo4j,
     readNeo4j,
     getWalls,
+    createLedlessWall,
     syncToWall,
+    syncToWallByCode,
     getWallInfo,
     setWallImage,
     setWallName,
@@ -384,6 +427,7 @@ export {
     deleteRoute,
     getHolds,
     createHold,
+    setHoldLed,
     moveHold,
     deleteHold,
     addHoldToRoute,

@@ -121,7 +121,7 @@ ${() => !this.state.open && html()`
     }
 
     close() {
-        this.state.open = false;
+        this.state.open = false
     }
 
     isOpen() {

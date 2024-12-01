@@ -85,8 +85,16 @@ async function setNickname(nickname) {
     return await post("/api/setNickname", {nickname})
 }
 
-async function syncToWall(wallId, wallName, brightness) {
-    return await post("/api/syncToWall", {wallId, wallName, brightness})
+async function createLedlessWall(wallName) {
+    return await post("/api/createLedlessWall", {wallName})
+}
+
+async function syncToWall(macAddress, wallName, brightness) {
+    return await post("/api/syncToWall", {macAddress, wallName, brightness})
+}
+
+async function syncToWallByCode(code, brightness) {
+    return await post("/api/syncToWallByCode", {code, brightness})
 }
 
 async function getWalls() {
@@ -179,7 +187,9 @@ async function setRouteStars(routeId, stars) {
 
 const Api = {
     getUser,
+    createLedlessWall,
     syncToWall,
+    syncToWallByCode,
     getWalls,
     getRoutesAndHolds,
     setWallImage,

@@ -64,6 +64,9 @@ class MessageCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *pCharacteristic) {
     String messageString = pCharacteristic->getValue();
     Serial.println("Got message: " + messageString);
+
+    // Send the message back to all other connected clients
+    sendMessage(messageString);
     JSONVar message = JSON.parse(messageString);
     String command = message["command"];
 

@@ -6,6 +6,7 @@ import "../components/x-icon.js"
 import {Bluetooth} from "../bluetooth.js";
 import {getUrlParams, updateUrlParams} from "../../utilz/url-utilz.js";
 import {Api} from "../api.js";
+import {showToast} from "../../utilz/toaster.js";
 
 createYoffeeElement("walls-page", () => {
     let urlParams = getUrlParams()
@@ -16,6 +17,11 @@ createYoffeeElement("walls-page", () => {
     //         chooseWall(wall)
     //     }
     // }
+
+    if (urlParams.code != null) {
+        enterWithCode(urlParams.code)
+        updateUrlParams({code: undefined})
+    }
 
     async function chooseWall(wallId) {
         try {
@@ -34,19 +40,32 @@ createYoffeeElement("walls-page", () => {
     async function connectToNearbyWall() {
         let btWall = await Bluetooth.connectToWall()
         let macAddress = btWall.id
-        let wallId = await Api.syncToWall(macAddress, btWall.name, btWall.brightness)
+        let wallId = await Api.connectToWall(macAddress, btWall.name, btWall.brightness)
         await chooseWall(wallId)
     }
 
     async function createLedlessWall() {
-        let wallId = await Api.createLedlessWall("WHOL")
+        function getRandomItem(array) {
+            const randomIndex = Math.floor(Math.random() * array.length)
+            return array[randomIndex]
+        }
+        let WALL_NAMES = [
+            "WHOL", "WALL",
+            "WOODY", "WOODY", "WOODY", "WOODY", "WOODY",
+            "PLANK", "BORDEN", "CRIMP", "EL CAP", "OFFDWAGON", "CAMP4", "JUGSICLE", "CRAMPS", "BOLDR", "SILENCE", "MEGABOARD", "FINGRTRAP"
+        ]
+        let name = getRandomItem(WALL_NAMES)
+        let wallId = await Api.createLedlessWall(name)
         await chooseWall(wallId)
+        showToast(`Created new wall! welcome to ${name}!`)
     }
 
-    async function enterWithCode() {
-        let code = prompt("What's the wall code?")
+    async function enterWithCode(code) {
+        if (code == null) {
+            code = prompt("What's the wall code?")
+        }
         if (code != null) {
-            let wallId = await Api.syncToWallByCode(code)
+            let wallId = await Api.connectToWallByCode(code)
             await chooseWall(wallId)
         }
     }
@@ -125,6 +144,7 @@ createYoffeeElement("walls-page", () => {
     
     #enter-code-button {
         background-color: var(--background-color-3);
+        color: var(--text-color);
         margin-bottom: 30px;
     }
 </style>

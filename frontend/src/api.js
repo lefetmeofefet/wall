@@ -89,12 +89,24 @@ async function createLedlessWall(wallName) {
     return await post("/api/createLedlessWall", {wallName})
 }
 
-async function syncToWall(macAddress, wallName, brightness) {
-    return await post("/api/syncToWall", {macAddress, wallName, brightness})
+async function connectToWall(macAddress, wallName, brightness) {
+    return await post("/api/connectToWall", {macAddress, wallName, brightness})
 }
 
-async function syncToWallByCode(code, brightness) {
-    return await post("/api/syncToWallByCode", {code, brightness})
+async function connectToWallByCode(code, brightness) {
+    return await post("/api/connectToWallByCode", {code, brightness})
+}
+
+async function setWallMacAddress(wallId, macAddress) {
+    return await post("/api/setWallMacAddress", {wallId, macAddress})
+}
+
+async function deleteWall(wallId) {
+    return await post("/api/deleteWall", {wallId})
+}
+
+async function isMacAddressLinkedToWall(macAddress) {
+    return await post("/api/isMacAddressLinkedToWall", {macAddress})
 }
 
 async function getWalls() {
@@ -136,12 +148,8 @@ async function createRoute() {
     })
 }
 
-async function updateRoute(routeId, name, grade) {
-    return await post("/api/updateRoute", {wallId: GlobalState.selectedWall.id, routeId, name, grade})
-}
-
-async function updateSetter(routeId, setterId) {
-    return await post("/api/updateSetter", {wallId: GlobalState.selectedWall.id, routeId, setterId})
+async function updateRoute(routeId, routeFields) {
+    return await post("/api/updateRoute", {wallId: GlobalState.selectedWall.id, routeId, routeFields})
 }
 
 async function updateSentStatus(routeId, sent) {
@@ -188,8 +196,11 @@ async function setRouteStars(routeId, stars) {
 const Api = {
     getUser,
     createLedlessWall,
-    syncToWall,
-    syncToWallByCode,
+    connectToWall,
+    connectToWallByCode,
+    setWallMacAddress,
+    deleteWall,
+    isMacAddressLinkedToWall,
     getWalls,
     getRoutesAndHolds,
     setWallImage,
@@ -197,7 +208,6 @@ const Api = {
     setWallBrightness,
     createRoute,
     updateRoute,
-    updateSetter,
     updateSentStatus,
     updateLikedStatus,
     deleteRoute,

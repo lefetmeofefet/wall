@@ -102,13 +102,17 @@ async function enterConfigureHoldsPage() {
     updateUrlParams({configuring: true})  // Important so that clicking "back" won't exit the site
     showToast("Holds are draggable now!")
 
-    await Bluetooth.clearLeds()
+    if (GlobalState.bluetoothConnected) {
+        await Bluetooth.clearLeds()
+    }
 }
 
 async function exitRoutePage() {
     if (GlobalState.configuringHolds) {
         GlobalState.configuringHolds = false
-        await Bluetooth.clearLeds()
+        if (GlobalState.bluetoothConnected) {
+            await Bluetooth.clearLeds()
+        }
         updateUrlParams({configuring: undefined})
     } else {
         GlobalState.selectedRoute = null
@@ -124,6 +128,7 @@ async function exitRoutePage() {
 
 async function exitWall() {
     GlobalState.selectedWall = null
+    await Bluetooth.disconnectFromBluetooth()
     updateUrlParams({wall: undefined})
     GlobalState.walls = await Api.getWalls()
 }
@@ -197,5 +202,6 @@ export {
     setAutoLeds,
     toggleLikeRoute,
     toggleSentRoute,
-    signOut
+    signOut,
+    onBackClicked
 }

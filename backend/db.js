@@ -78,7 +78,7 @@ async function createLedlessWall(wallName, userId) {
         id: randomUUID(),
         code: "${generateCode()}",
         name: $wallName,
-        brightness: 50,
+        brightness: 80,
         createdAt: timestamp()
     })
     WITH wall
@@ -88,7 +88,7 @@ async function createLedlessWall(wallName, userId) {
     `, {wallName, userId})
 }
 
-async function syncToWall(macAddress, wallName, brightness, userId) {
+async function connectToWall(macAddress, wallName, brightness, userId) {
     return await queryNeo4jSingleResult(`
     MERGE (wall:Wall{macAddress: $macAddress})
     ON CREATE SET wall.id = randomUUID(),
@@ -103,12 +103,36 @@ async function syncToWall(macAddress, wallName, brightness, userId) {
     `, {macAddress, wallName, brightness, userId})
 }
 
-async function syncToWallByCode(code, userId) {
+async function connectToWallByCode(code, userId) {
     return await queryNeo4jSingleResult(`
     MATCH (wall:Wall{code: $code}), (user:User{id: $userId})
     MERGE (wall) -[:has]-> (user)
     RETURN wall.id as id
     `, {code, userId})
+}
+
+async function setWallMacAddress(wallId, macAddress, userId) {
+    return await queryNeo4jSingleResult(`
+    MATCH (wall:Wall{id: $wallId}) -[:has]-> (user:User{id: $userId})
+    SET wall.macAddress = $macAddress
+    `, {wallId, macAddress, userId})
+}
+
+async function deleteWall(wallId, userId) {
+    return await queryNeo4jSingleResult(`
+    MATCH (wall:Wall{id: $wallId}) -[:has]-> (user:User{id: $userId})
+    OPTIONAL MATCH (wall) -[:has]-> (hold:Hold)
+    OPTIONAL MATCH (wall) -[:has]-> (route:Route)
+    DETACH DELETE route, hold, wall
+    `, {wallId, userId})
+}
+
+async function isMacAddressLinkedToWall(macAddress) {
+    let result = await queryNeo4jSingleResult(`
+    MATCH (wall:Wall{macAddress: $macAddress})
+    RETURN wall.id as id
+    `, {macAddress})
+    return result?.id != null
 }
 
 async function getWallInfo(wallId, userId) {
@@ -211,11 +235,25 @@ async function createRoute(wallId, setterId) {
     `, {wallId, setterId})
 }
 
-async function updateRoute(wallId, routeId, name, grade) {
-    await queryNeo4j(`
-    MATCH (wall:Wall{id: $wallId}) -[:has]-> (route:Route{id: $routeId})
-    SET route.name = $name, route.grade = $grade
-    `, {wallId, routeId, name, grade})
+async function updateRoute(wallId, routeId, routeFields) {
+    if (routeFields.name != null || routeFields.grade != null) {
+        let updateStatements = []
+        if (routeFields.name != null) {
+            updateStatements.push("route.name = $name")
+        }
+        if (routeFields.grade != null) {
+            updateStatements.push("route.grade = $grade")
+        }
+        if (updateStatements.length > 0) {
+            await queryNeo4j(`
+            MATCH (wall:Wall{id: $wallId}) -[:has]-> (route:Route{id: $routeId})
+            SET ${updateStatements.join(", ")}
+            `, {wallId, routeId, name: routeFields.name || "", grade: routeFields.grade || ""})
+        }
+    }
+    if (routeFields.setterId != null) {
+        await updateSetter(wallId, routeId, routeFields.setterId)
+    }
 }
 
 async function updateSetter(wallId, routeId, setterId) {
@@ -405,8 +443,11 @@ export {
     readNeo4j,
     getWalls,
     createLedlessWall,
-    syncToWall,
-    syncToWallByCode,
+    connectToWall,
+    connectToWallByCode,
+    setWallMacAddress,
+    deleteWall,
+    isMacAddressLinkedToWall,
     getWallInfo,
     setWallImage,
     setWallName,
@@ -421,7 +462,6 @@ export {
     getRoute,
     createRoute,
     updateRoute,
-    updateSetter,
     updateSentStatus,
     updateLikedStatus,
     deleteRoute,

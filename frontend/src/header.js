@@ -22,24 +22,28 @@ createYoffeeElement("header-bar", (props, self) => {
         searchMode: false
     }
 
-    self.onConnect = () => {
-        adjustTitleSize()
-    }
-
-    function adjustTitleSize() {
+    function adjustTitleSize(repeated) {
         let title = self.shadowRoot.querySelector("#title")
         const TITLE_WIDTH_PX = 55
         if (title != null && title.offsetWidth !== title.scrollWidth) {
             title.style.fontSize = TITLE_WIDTH_PX * (title.offsetWidth / title.scrollWidth) + "px"
+        }
+        if (repeated == null) {
+            requestAnimationFrame(() => adjustTitleSize(true))
         }
     }
 
     // Remember the filter value if going back to this page
     if (GlobalState.freeTextFilter != null) {
         state.searchMode = true
-        self.onConnect = () => {
+    }
+    self.onConnect = () => {
+        if (GlobalState.freeTextFilter != null && state.searchMode) {
             self.shadowRoot.querySelector("#search").setValue(GlobalState.freeTextFilter)
         }
+
+        // adjust the title size
+        adjustTitleSize()
     }
 
     const updateSearch = search => {
@@ -140,7 +144,6 @@ createYoffeeElement("header-bar", (props, self) => {
         font-size: 18px;
         border-bottom: 3px solid #00000000;
         display: flex;
-        gap: 8px;
         -webkit-tap-highlight-color: transparent; /* Stops the blue background highlight */
         margin-left: auto;
     }
@@ -202,7 +205,6 @@ createYoffeeElement("header-bar", (props, self) => {
     yoffee-list-location-marker {
         display: none;
     }
-    
 </style>
 
 ${() => GlobalState.loading ? html()`
@@ -236,6 +238,7 @@ ${() => state.searchMode ? html()`
             onclick=${() => {
                 state.searchMode = false
                 updateSearch(null)
+                adjustTitleSize()
             }}
     ></x-icon>
     <x-icon icon="fa fa-times"
@@ -299,8 +302,17 @@ ${() => GlobalState.selectedWall != null && html()`
             </x-button>
         </div>
         
+        
         ${() => GlobalState.selectedWall != null && html()`
         <x-button class="settings-item"
+                  onclick=${async () => {
+                      await navigator.clipboard.writeText(`${window.location.href}?code=${GlobalState.selectedWall.code}`)
+                      showToast("Wall link copied to clipboard!")
+                      self.shadowRoot.querySelector("#settings-dialog").close()
+                  }}>
+            <x-icon icon="fa fa-share-alt"></x-icon>
+            Copy Invite link
+        </x-button><x-button class="settings-item"
                   onclick=${() => enterConfigureHoldsPage()}>
             <x-icon icon="fa fa-hand-rock"></x-icon>
             Configure Holds
@@ -317,10 +329,12 @@ ${() => GlobalState.selectedWall != null && html()`
                       if (newWallName != null) {
                           GlobalState.loading = true
                           try {
-                              await Bluetooth.setWallName(newWallName)
                               await Api.setWallName(newWallName)
                               GlobalState.selectedWall.name = newWallName
                               GlobalState.selectedWall = {...GlobalState.selectedWall}
+                              if (GlobalState.bluetoothConnected) {
+                                  await Bluetooth.setWallName(newWallName)
+                              }
                               requestAnimationFrame(() => adjustTitleSize())
                           } finally {
                               GlobalState.loading = false
@@ -364,7 +378,6 @@ ${() => GlobalState.selectedWall != null && html()`
         </x-button>
         `}
         
-        
         <div id="theme-toggle"
              class="settings-item">
             <x-icon icon=${() => GlobalState.darkTheme ? "fa fa-moon" : "fa fa-sun"}></x-icon>
@@ -384,19 +397,45 @@ ${() => GlobalState.selectedWall != null && html()`
             <x-icon icon="fa fa-expand"></x-icon>
             Toggle fullscreen
         </x-button>
+        
+        ${() => GlobalState.selectedWall == null && html()`
         <x-button class="settings-item"
                   id="exit-wall"
                   onclick=${() => signOut()}>
             <x-icon icon="fa fa-sign-out-alt" style="transform: rotate(180deg)"></x-icon>
             Sign out
         </x-button>
+        `}
         
+        ${() => GlobalState.selectedWall?.macAddress != null && html()`
+        <x-button class="settings-item"
+                  id="unlink-wall"
+                  onclick=${async () => {
+                      await Api.setWallMacAddress(GlobalState.selectedWall.id, null)
+                      GlobalState.selectedWall.macAddress = null
+                      await exitWall()
+                      showToast("Successfully unlinked wall from LED system!")
+                  }}>
+            <x-icon icon="fa fa-chain-broken"></x-icon>
+            Unlink wall from LED sytem
+        </x-button>
+        `}
         ${() => GlobalState.selectedWall != null && html()`
         <x-button class="settings-item"
-                  id="exit-wall"
-                  onclick=${() => exitWall()}>
-            <x-icon icon="fa fa-no-icon-fk"></x-icon>
-            Exit wall
+                  id="delete-wall"
+                  onclick=${async () => {
+                      let wallName = GlobalState.selectedWall.name
+                      let input = prompt(`Are you SURE you want to delete the wall ${GlobalState.selectedWall.name}? ALL data including routes and holds will be deleted. \nTo continue, enter the wall name:`)
+                      if (input === GlobalState.selectedWall.name) {
+                          await Api.deleteWall(GlobalState.selectedWall.id)
+                          showToast(`Successfully deleted the wall ${wallName}!`)
+                          exitWall()
+                      } else if (input != null) {
+                          showToast("Wall name to delete wasn't entered correctly", {error: true})
+                      }
+                  }}>
+            <x-icon icon="fa fa-trash"></x-icon>
+            Delete wall
         </x-button>
         `}
     </div>

@@ -1,11 +1,17 @@
 import {exitWall, GlobalState} from "./state.js";
 import {showToast} from "../utilz/toaster.js";
+import {Api} from "./api.js";
 
 const WALL_SERVICE_ID = '5c8468d0-024e-4a0c-a2f1-4742299119e3'
 const CHARACTERISTIC_ID = '82155e2a-76a2-42fb-8273-ea01aa87c5be'
 
 let characteristic
 
+
+async function disconnectFromBluetooth() {
+    GlobalState.bluetoothConnected = false
+    characteristic = null
+}
 
 // Scan and display available walls
 async function scanAndConnect(onMessageCb, onDisconnectCb) {
@@ -20,6 +26,15 @@ async function scanAndConnect(onMessageCb, onDisconnectCb) {
     await connectToDevice(device, onMessageCb)
     device.addEventListener('gattserverdisconnected', () => onDisconnectCb());
     return device.name
+
+    // Testicle
+    // setTimeout(() => onMessageCb(JSON.stringify({
+    //     command: "wallInfo",
+    //     id: '12:34:56:78:90',
+    //     brightness: 100,
+    //     name: "wole"
+    // })), 500)
+    // return " am wahll"
 }
 
 async function connectToDevice(device, onMessageCb) {
@@ -62,13 +77,40 @@ async function connectToWall(secondTry) {
                 GlobalState.bluetoothConnected = false
             }
         )
-        GlobalState.bluetoothConnected = true
         let wallInfo = await getWallInfo()
+
+        // Check if we connected to selected wall in the app
         if (GlobalState.selectedWall != null && wallInfo.id !== GlobalState.selectedWall.macAddress) {
-            showToast("Nearby wall is not this wall!", {isError: true})
-            await exitWall()
-            return Promise.reject("Nearby wall is not this wall")
+            // if mac address is linked to other wall, we fail.
+            // otherwise, ask user if we should connect to the new LED system
+            let macAddressLinked = await Api.isMacAddressLinkedToWall(wallInfo.id)
+            if (macAddressLinked) {
+                showToast(`Nearby LED system is already registered to a different wall ("${wallInfo.name}")! did you choose the right wall in the app?`, {error: true, duration: 10000})
+                await disconnectFromBluetooth()
+                return Promise.reject("Attempted connecting to a LED system which is already linked to a different wall")
+            } else if (confirm("You've connected to a new LED system. Continue?")) {
+                await Api.setWallMacAddress(GlobalState.selectedWall.id, wallInfo.id)
+                GlobalState.selectedWall.macAddress = wallInfo.id
+            } else {
+                await disconnectFromBluetooth()
+                return Promise.reject("User canceled connection to new wall")
+            }
         }
+        if (GlobalState.selectedWall != null) {
+            GlobalState.selectedWall.brightness = wallInfo.brightness
+            try {
+                if (GlobalState.selectedWall.name !== wallInfo.name) {
+                    console.log("Setting wall name")
+                    await setWallName(GlobalState.selectedWall.name)
+                }
+                if (GlobalState.selectedWall.brightness !== wallInfo.brightness) {
+                    console.log("Setting brightness")
+                    await setWallBrightness(GlobalState.selectedWall.brightness)
+                }
+            } catch {}
+        }
+
+        GlobalState.bluetoothConnected = true
         return {
             id: wallInfo.id,
             name: wallName,
@@ -182,7 +224,7 @@ function getLedRGB(isOn, holdType) {
         } else if (holdType === "finish") {
             return {r: 255, g: 0, b: 0}
         }
-        return {r: 0, g: 150, b: 220}
+        return {r: 0, g: 100, b: 200}
     }
     return {r: 0, g: 0, b: 0}
 }
@@ -250,6 +292,7 @@ setInterval(async () => {
 }, 5000)
 
 let Bluetooth = {
+    disconnectFromBluetooth,
     connectToWall,
     setWallName,
     highlightRoute,

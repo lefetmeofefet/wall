@@ -1,7 +1,7 @@
 import {html, createYoffeeElement} from "../../libs/yoffee/yoffee.min.js"
 import {
     GlobalState,
-    enterRoutePage,
+    enterRoutePage, exitWall,
 } from "../state.js";
 import {Bluetooth} from "../bluetooth.js";
 import {Api} from "../api.js";
@@ -46,11 +46,11 @@ createYoffeeElement("routes-page", (props, self) => {
         
     }
     
-    #new-route-button, #clear-leds-button {
+    .bottom-button {
         border-radius: 1000px;
         position: fixed;
         right: 13%;
-        bottom: 40px;
+        bottom: 50px;
         color: var(--text-color-on-secondary);
         width: 30px;
         height: 30px;
@@ -83,7 +83,8 @@ createYoffeeElement("routes-page", (props, self) => {
 
 <routes-list onscroll=${e => onScroll(e.target.scrollTop)}></routes-list>
 
-<x-button id="new-route-button" 
+<x-button id="new-route-button"
+          class="bottom-button"
           onclick=${async () => {
         let {route} = await Api.createRoute()
         route.isNew = true
@@ -93,7 +94,8 @@ createYoffeeElement("routes-page", (props, self) => {
     <x-icon icon="fa fa-plus"></x-icon>
 </x-button>
 
-<x-button id="clear-leds-button" 
+<x-button id="clear-leds-button"
+          class="bottom-button"
           onclick=${async () => {
         await Bluetooth.clearLeds()
     }}>

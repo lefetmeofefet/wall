@@ -6,8 +6,8 @@ import {
     getHolds,
     getRoutes, getUserById,
     getWallInfo, getWalls, moveHold, removeHoldFromRoute, setRouteStars, setUserNickname, setWallBrightness,
-    setWallImage, setWallName, syncToWall, syncToWallByCode, updateLikedStatus,
-    updateRoute, updateSentStatus, updateSetter
+    setWallImage, setWallName, connectToWall, connectToWallByCode, updateLikedStatus,
+    updateRoute, updateSentStatus, isMacAddressLinkedToWall, setWallMacAddress, deleteWall
 } from "../db.js";
 import express from "express";
 
@@ -30,16 +30,33 @@ router.post('/createLedlessWall', async (req, res) => {
     res.json(wall.id)
 })
 
-router.post('/syncToWall', async (req, res) => {
+router.post('/connectToWall', async (req, res) => {
     const {macAddress, wallName, brightness} = req.body
-    let wall = await syncToWall(macAddress, wallName, brightness, req.userId)
+    let wall = await connectToWall(macAddress, wallName, brightness, req.userId)
     res.json(wall.id)
 })
 
-router.post('/syncToWallByCode', async (req, res) => {
+router.post('/connectToWallByCode', async (req, res) => {
     const {code} = req.body
-    let wall = await syncToWallByCode(code.toUpperCase(), req.userId)
+    let wall = await connectToWallByCode(code.toUpperCase(), req.userId)
     res.json(wall.id)
+})
+
+router.post('/setWallMacAddress', async (req, res) => {
+    const {wallId, macAddress} = req.body
+    await setWallMacAddress(wallId, macAddress, req.userId)
+    res.json({status: "success"})
+})
+
+router.post('/deleteWall', async (req, res) => {
+    const {wallId} = req.body
+    await deleteWall(wallId, req.userId)
+    res.json({status: 'success'})
+})
+
+router.post('/isMacAddressLinkedToWall', async (req, res) => {
+    const {macAddress} = req.body
+    res.json(await isMacAddressLinkedToWall(macAddress))
 })
 
 router.post('/getWalls', async (req, res) => {
@@ -84,14 +101,8 @@ router.post('/createRoute', async (req, res) => {
 })
 
 router.post('/updateRoute', async (req, res) => {
-    const {wallId, routeId, name, grade} = req.body
-    await updateRoute(wallId, routeId, name, grade)
-    res.json({status: 'success'})
-})
-
-router.post('/updateSetter', async (req, res) => {
-    const {wallId, routeId, setterId} = req.body
-    await updateSetter(wallId, routeId, setterId)
+    const {wallId, routeId, routeFields} = req.body
+    await updateRoute(wallId, routeId, routeFields)
     res.json({status: 'success'})
 })
 

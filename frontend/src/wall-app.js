@@ -5,6 +5,7 @@ import "./walls-page/walls-page.js"
 import "./snake-page.js"
 import "./single-route-page/single-route-page.js"
 import "./header.js"
+import "./footer.js"
 import "./routes-page/routes-page.js"
 import "./components/text-input.js"
 import "./components/x-button.js"
@@ -42,5 +43,9 @@ ${() => {
         return html()`<routes-page></routes-page>`
     }
 }}
+
+${() => GlobalState.selectedWall != null && html()`
+<footer-bar></footer-bar>
+`}
 `
 });

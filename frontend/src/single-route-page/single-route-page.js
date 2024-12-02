@@ -392,6 +392,7 @@ createYoffeeElement("single-route-page", (props, self) => {
         align-items: center;
         justify-content: space-evenly;
         height: 50px;
+        min-height: 44px;
     }
     
     #bottom-buttons > x-button {

@@ -188,7 +188,7 @@ createYoffeeElement("single-route-page", (props, self) => {
     :host {
         display: flex;
         flex-direction: column;
-        height: -webkit-fill-available;
+        flex: 1;
         overflow: hidden;
     }
     
@@ -216,7 +216,7 @@ createYoffeeElement("single-route-page", (props, self) => {
     #header > #top-row > #settings-button {
         margin-left: auto;
         transition: 300ms;
-        color: var(--text-color);
+        color: var(--text-color-on-secondary);
         cursor: pointer;
         padding: 10px 5px;
         font-size: 18px;
@@ -346,15 +346,17 @@ createYoffeeElement("single-route-page", (props, self) => {
         background-color: #ffffffe0;
         max-width: 75vh;
         align-self: center;
-        width: -webkit-fill-available;
+        flex: 1;
+        overflow: hidden; /* for iphone shit */
     }
     
     #holds-container {
         position: relative;
         margin: 13px 13px 13px 13px;
-        height: inherit;
+        height: auto;
         touch-action: none;
         width: -webkit-fill-available;
+        overflow: hidden; /* for iphone shit */
     }
     
     #holds-container > .hold {
@@ -397,7 +399,7 @@ createYoffeeElement("single-route-page", (props, self) => {
     
     #bottom-buttons > x-button {
         border-radius: 1000px;
-        color: var(--text-color-on-secondary);
+        color: var(--text-color-weak);
         background-color: var(--background-color-3);
         width: 20px;
         height: 20px;
@@ -405,14 +407,17 @@ createYoffeeElement("single-route-page", (props, self) => {
     
     #bottom-buttons > #heart-button[liked] {
         background-color: var(--love-color);
+        color: var(--text-color-on-secondary);
     }
     
     #bottom-buttons > #edit-button[active] {
         background-color: var(--secondary-color);
+        color: var(--text-color-on-secondary);
     }
     
     #bottom-buttons > #log-send-button[active] {
         background-color: var(--great-success-color);
+        color: var(--text-color-on-secondary);
     }
     
     #bottom-buttons > #star-button {
@@ -421,6 +426,7 @@ createYoffeeElement("single-route-page", (props, self) => {
     
     #bottom-buttons > #star-button[active] {
         background-color: #BFA100;
+        color: var(--text-color-on-secondary);
     }
     
     #bottom-buttons > #turn-on-leds-button {
@@ -428,6 +434,7 @@ createYoffeeElement("single-route-page", (props, self) => {
     
     #bottom-buttons > #turn-on-leds-button[active] {
         background-color: var(--secondary-color);
+        color: var(--text-color-on-secondary);
     }
     
     #plus-button {

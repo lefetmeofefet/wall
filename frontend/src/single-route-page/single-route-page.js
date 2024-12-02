@@ -348,6 +348,8 @@ createYoffeeElement("single-route-page", (props, self) => {
         align-self: center;
         flex: 1;
         overflow: hidden; /* for iphone shit */
+        min-width: 100%;
+        width: 100%;
     }
     
     #holds-container {
@@ -356,7 +358,6 @@ createYoffeeElement("single-route-page", (props, self) => {
         height: auto;
         touch-action: none;
         width: -webkit-fill-available;
-        overflow: hidden; /* for iphone shit */
     }
     
     #holds-container > .hold {

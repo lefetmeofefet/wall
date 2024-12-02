@@ -77,6 +77,9 @@ async function connectToWall(secondTry) {
                 GlobalState.bluetoothConnected = false
             }
         )
+
+        // We must set bluetoothConnected = tru before getWallInfo because otherwise getWallInfo will trigger a reconnection lol
+        GlobalState.bluetoothConnected = true
         let wallInfo = await getWallInfo()
 
         // Check if we connected to selected wall in the app
@@ -110,7 +113,6 @@ async function connectToWall(secondTry) {
             } catch {}
         }
 
-        GlobalState.bluetoothConnected = true
         return {
             id: wallInfo.id,
             name: wallName,
@@ -204,6 +206,7 @@ async function setWallName(wallName) {
 let receiveWallInfo
 
 async function getWallInfo() {
+
     await sendBTMessage({
         command: "getInfo",
     })

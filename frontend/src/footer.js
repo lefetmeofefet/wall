@@ -1,5 +1,6 @@
 import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
 import {exitWall, GlobalState, onBackClicked} from "./state.js";
+import {Bluetooth} from "./bluetooth.js";
 
 createYoffeeElement("footer-bar", (props, self) => {
     return html(GlobalState)`
@@ -42,7 +43,6 @@ createYoffeeElement("footer-bar", (props, self) => {
     
     #connection-status > #check-icon {
         color: var(--great-success-color);
-        width: 25px;
     }
     
     .bt-icon {
@@ -56,10 +56,11 @@ createYoffeeElement("footer-bar", (props, self) => {
     back
 </x-button>
 <div id="connection-status"
-     data-connected=${() => GlobalState.bluetoothConnected}>
-    ${renderBtIcon()}
-    ${() => GlobalState.bluetoothConnected ? "connected" : "not connected"}
+     data-connected=${() => GlobalState.bluetoothConnected}
+     onclick=${() => !GlobalState.bluetoothConnected && Bluetooth.connectToWall()}>
     ${() => GlobalState.bluetoothConnected && html()`<x-icon id="check-icon" icon="fa fa-check"></x-icon>`}
+    ${() => GlobalState.bluetoothConnected ? "connected" : "not connected"}
+    ${renderBtIcon()}
 </div>
     `
 })

@@ -116,14 +116,15 @@ createYoffeeElement("routes-filter", (props, self) => {
         gap: 2px;
         margin-top: 3px;
         padding-bottom: 5px;
-        flex-wrap: wrap;
+        /*flex-wrap: wrap;*/
         min-height: 28px; /* Shit fix for iphone, find better solution*/
-        min-height: fit-content;
+        /*min-height: fit-content;*/
     }
     
     x-dialog {
         background-color: var(--background-color);
         color: var(--text-color);
+        white-space: nowrap;
     }
     
     .tag {

@@ -1,5 +1,5 @@
 import {html, createYoffeeElement} from "../../libs/yoffee/yoffee.min.js"
-import {exitRoutePage, GlobalState, toggleLikeRoute, toggleSentRoute, WallImage} from "../state.js"
+import {exitRoutePage, GlobalState, onBackClicked, toggleLikeRoute, toggleSentRoute, WallImage} from "../state.js"
 import {Api} from "../api.js"
 import {showToast} from "../../utilz/toaster.js";
 import {Bluetooth} from "../bluetooth.js";
@@ -207,10 +207,19 @@ createYoffeeElement("single-route-page", (props, self) => {
         align-items: center;
     }
     
+    #back-button {
+        border-radius: 100px;
+        width: 10px;
+        height: 10px;
+        padding: 12px;
+        margin-right: 10px;
+        color: var(--text-color-on-secondary);
+    }
+    
     #header > #top-row > #route-name-input {   
         font-size: 20px;
         padding: 0;
-        max-width: 85%;
+        max-width: 70%;
     }
     
     #header > #top-row > #settings-button {
@@ -271,6 +280,7 @@ createYoffeeElement("single-route-page", (props, self) => {
         height: 30px;
         font-size: 14px;
         opacity: 0.8;
+        margin-left: 44px;
     }
     
     #setter-button {
@@ -478,6 +488,10 @@ ${() => GlobalState.loading ? html()`
 
 <div id="header">
     <div id="top-row">
+        <x-button id="back-button"
+                  onclick=${() => onBackClicked()}>
+            <x-icon icon="fa fa-arrow-left"></x-icon>
+        </x-button>
         <text-input id="route-name-input"
                     class="title-text header-input"
                     value=${() => GlobalState.selectedRoute?.name || "Configuring wall"}

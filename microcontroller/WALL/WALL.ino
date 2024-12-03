@@ -77,6 +77,7 @@ class MessageCallbacks : public BLECharacteristicCallbacks {
       String macAddress = getBluetoothMACAddress();
       response["id"] = macAdress;
       response["macAddress"] = macAddress;
+      response["ledBoxId"] = macAddress;
       response["command"] = "wallInfo";
       sendMessage(JSON.stringify(response));
     } else if (command == "setWallName") {

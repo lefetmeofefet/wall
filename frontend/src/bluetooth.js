@@ -182,7 +182,7 @@ async function sendBTMessage(message){
     if (!GlobalState.bluetoothConnected) {
         let connectionResult = await connectToWall()
         if (connectionResult == null) {
-            return
+            return Promise.reject("Didn't connect to wall")
         }
     }
     await sendBTMessageSync(message)
@@ -206,7 +206,6 @@ async function setWallName(wallName) {
 let receiveWallInfo
 
 async function getWallInfo() {
-
     await sendBTMessage({
         command: "getInfo",
     })
@@ -239,7 +238,7 @@ async function highlightRoute(route) {
     normalLedGroup.i = []
     startLedGroup.i = []
     finishLedGroup.i = []
-    for (let hold of route.holds) {
+    for (let hold of route.holds.filter(h => h.ledId != null)) {
         if (hold.holdType === "start") {
             startLedGroup.i.push(hold.ledId)
         } else if (hold.holdType === "finish") {
@@ -268,22 +267,26 @@ async function clearLeds() {
 }
 
 async function setHoldState(hold) {
-    await sendBTMessage({
-        command: "setLed",
-        snakeMode: false,
-        led: {
-            ...getLedRGB(hold.inRoute, hold.holdType),
-            i: hold.ledId
-        }
-    })
+    if (hold.ledId != null) {
+        await sendBTMessage({
+            command: "setLed",
+            snakeMode: false,
+            led: {
+                ...getLedRGB(hold.inRoute, hold.holdType),
+                i: hold.ledId
+            }
+        })
+    }
 }
 
 async function setSnakeModeLed(r, g, b, i) {
-    await sendBTMessage({
-        command: "setLed",
-        snakeMode: true,
-        led: {r, g, b, i}
-    })
+    if (i != null) {
+        await sendBTMessage({
+            command: "setLed",
+            snakeMode: true,
+            led: {r, g, b, i}
+        })
+    }
 }
 
 setInterval(async () => {

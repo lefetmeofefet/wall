@@ -25,11 +25,16 @@ createYoffeeElement("header-bar", (props, self) => {
     function adjustTitleSize(repeated) {
         let title = self.shadowRoot.querySelector("#title")
         const TITLE_WIDTH_PX = 55
+        let currentFontSize = parseFloat(window.getComputedStyle(title).fontSize)
+        if (currentFontSize !== TITLE_WIDTH_PX){
+            title.style.fontSize = `${TITLE_WIDTH_PX}px`
+        }
         if (title != null && title.offsetWidth !== title.scrollWidth) {
-            title.style.fontSize = TITLE_WIDTH_PX * (title.offsetWidth / title.scrollWidth) + "px"
+            title.style.fontSize = Math.floor(TITLE_WIDTH_PX * (title.offsetWidth / title.scrollWidth)) + "px"
         }
         if (repeated == null) {
-            requestAnimationFrame(() => adjustTitleSize(true))
+            // No need to repeat, I think. if stupid browsers will stop working, try this
+            // requestAnimationFrame(() => adjustTitleSize(true))
         }
     }
 
@@ -41,9 +46,6 @@ createYoffeeElement("header-bar", (props, self) => {
         if (GlobalState.freeTextFilter != null && state.searchMode) {
             self.shadowRoot.querySelector("#search").setValue(GlobalState.freeTextFilter)
         }
-
-        // adjust the title size
-        adjustTitleSize()
     }
 
     const updateSearch = search => {
@@ -146,6 +148,8 @@ createYoffeeElement("header-bar", (props, self) => {
         display: flex;
         -webkit-tap-highlight-color: transparent; /* Stops the blue background highlight */
         margin-left: auto;
+        width: 15px;
+        min-width: 15px;
     }
     
     #settings-button:hover {
@@ -229,7 +233,8 @@ ${() => GlobalState.loading ? html()`
 </style>
 ` : ""}
 
-${() => state.searchMode ? html()`
+${() => {
+    let element = state.searchMode ? html()`
 <text-input id="search"
             onfocus=${e => !e.target.selected && e.target.select()}
             oninput=${e => updateSearchDebounce(e.target.value)}>
@@ -238,7 +243,6 @@ ${() => state.searchMode ? html()`
             onclick=${() => {
                 state.searchMode = false
                 updateSearch(null)
-                adjustTitleSize()
             }}
     ></x-icon>
     <x-icon icon="fa fa-times"
@@ -268,7 +272,11 @@ ${() => GlobalState.selectedWall != null && html()`
     <x-icon icon="fa fa-search"></x-icon>
 </x-button>
 `}
-`}
+`
+    // adjust title size every time we render the title
+    requestAnimationFrame(() => adjustTitleSize())
+    return element
+}}
     
 
 <div id="settings-button" 
@@ -306,7 +314,7 @@ ${() => GlobalState.selectedWall != null && html()`
         ${() => GlobalState.selectedWall != null && html()`
         <x-button class="settings-item"
                   onclick=${async () => {
-                      await navigator.clipboard.writeText(`${window.location.href}?code=${GlobalState.selectedWall.code}`)
+                      await navigator.clipboard.writeText(`${window.location.origin}/?code=${GlobalState.selectedWall.code}`)
                       showToast("Wall link copied to clipboard!")
                       self.shadowRoot.querySelector("#settings-dialog").close()
                   }}>
@@ -335,7 +343,6 @@ ${() => GlobalState.selectedWall != null && html()`
                               if (GlobalState.bluetoothConnected) {
                                   await Bluetooth.setWallName(newWallName)
                               }
-                              requestAnimationFrame(() => adjustTitleSize())
                           } finally {
                               GlobalState.loading = false
                           }

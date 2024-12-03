@@ -1,7 +1,7 @@
 import {html, createYoffeeElement} from "../../libs/yoffee/yoffee.min.js"
 import {
     GlobalState,
-    enterRoutePage, exitWall,
+    enterRoutePage, exitWall, enterConfigureHoldsPage,
 } from "../state.js";
 import {Bluetooth} from "../bluetooth.js";
 import {Api} from "../api.js";
@@ -46,6 +46,12 @@ createYoffeeElement("routes-page", (props, self) => {
         
     }
     
+    #configure-wall-button {
+        background-color: var(--secondary-color);
+        border-radius: 100px;
+        margin-top: 10px;
+    }
+    
     .bottom-button {
         border-radius: 1000px;
         position: fixed;
@@ -58,7 +64,7 @@ createYoffeeElement("routes-page", (props, self) => {
     }
     
     #clear-leds-button {
-        background-color: var(--text-color-weak-3);
+        background-color: var(--background-color);
         right: calc(13% + 75px);
         font-size: 20px;
         color: var(--text-color);
@@ -80,6 +86,13 @@ createYoffeeElement("routes-page", (props, self) => {
 <header-bar></header-bar>
 
 <routes-filter></routes-filter>
+
+${() => GlobalState.holds.length === 0 && html()`
+<x-button id="configure-wall-button"
+          onclick=${() => enterConfigureHoldsPage()}>
+    Configure wall and add holds
+</x-button>
+`}
 
 <routes-list onscroll=${e => onScroll(e.target.scrollTop)}></routes-list>
 

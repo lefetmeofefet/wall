@@ -72,6 +72,7 @@ customElements.define("text-input", class extends YoffeeElement {
             </style>
             <slot name="before"></slot>
             <input type="${() => this.props.type}"
+                   disabled="${() => this.props.disabled}"
                    placeholder="${() => this.props.placeholder}"
                    onchange=${() => this.props.changed && this.props.changed(this.value)}
                    onfocus=${() => this.props.focused && this.props.focused()}

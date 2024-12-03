@@ -25,11 +25,11 @@ const SORT_TYPES = {
 
 const FILTER_TYPES = {
     GRADE: "Grade",
-    RATING: "Rating",
     LIKED_ROUTES: "Liked routes",
     SENT_BY_ME: "Sent by me",
     NOT_SENT_BY_ME: "Not sent by me",
     SETTER: "Setter",
+    RATING: "Rating",
 }
 
 

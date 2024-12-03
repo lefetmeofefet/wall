@@ -34,6 +34,11 @@ createYoffeeElement("routes-list", (props, self) => {
         }
     }
     
+    #no-routes {
+        color: var(--text-color-weak-1);
+        margin-top: 10px;
+    }
+    
     .route {
         display: flex;
         align-items: center;
@@ -122,7 +127,8 @@ createYoffeeElement("routes-list", (props, self) => {
     }
 </style>
 
-${() => GlobalState.routes
+${() => {
+    let filteredRoutes = GlobalState.routes
         .filter(route => {
             for (let filter of GlobalState.filters) {
                 if (filter.type === FILTER_TYPES.GRADE) {
@@ -175,7 +181,14 @@ ${() => GlobalState.routes
                 return r1.sends < r2.sends ? -1 : 1
             }
         })
-        .map(route => html(route)`
+        if (filteredRoutes.length === 0) {
+            if (GlobalState.holds.length === 0) {
+                return null
+            }
+            return html()`<div id="no-routes">No routes</div>`
+        }
+        return filteredRoutes
+            .map(route => html(route)`
 <x-button class="route" 
           onclick=${() => enterRoutePage(route)}
           no-ripple>
@@ -206,7 +219,7 @@ ${() => GlobalState.routes
     </x-button>
     
     <div class="grade">V${() => route.grade}</div>
-</x-button>
-`)}
+</x-button>`)
+}}
 `
 })

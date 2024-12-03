@@ -100,7 +100,10 @@ async function enterConfigureHoldsPage() {
 
     GlobalState.configuringHolds = true
     updateUrlParams({configuring: true})  // Important so that clicking "back" won't exit the site
-    showToast("Holds are draggable now!")
+
+    if (GlobalState.holds.length > 0) {
+        showToast("Holds are draggable now!")
+    }
 
     if (GlobalState.bluetoothConnected) {
         await Bluetooth.clearLeds()
@@ -135,8 +138,10 @@ async function exitWall() {
 
 async function unselectHolds() {
     for (let hold of GlobalState.holds) {
-        hold.inRoute = false
-        hold.holdType = ""
+        if (hold.inRoute || hold.holdType !== "") {
+            hold.inRoute = false
+            hold.holdType = ""
+        }
     }
 }
 
@@ -173,7 +178,7 @@ function onBackClicked() {
         GlobalState.isSnaking = false
         updateUrlParams({snaking: undefined})
     } else {
-        if (GlobalState.selectedRoute != null) {
+        if (GlobalState.selectedRoute != null || GlobalState.configuringHolds) {
             exitRoutePage()
         } else if (GlobalState.selectedWall != null) {
             exitWall()

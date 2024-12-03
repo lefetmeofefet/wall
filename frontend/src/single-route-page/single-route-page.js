@@ -117,7 +117,7 @@ createYoffeeElement("single-route-page", (props, self) => {
         }
 
         if (GlobalState.configuringHolds) {
-            // Clear the current led
+            // Clear the current led / leds
             for (let hold of GlobalState.holds) {
                 if (hold.inRoute) {
                     hold.inRoute = false
@@ -212,14 +212,15 @@ createYoffeeElement("single-route-page", (props, self) => {
         width: 10px;
         height: 10px;
         padding: 12px;
-        margin-right: 10px;
+        margin-right: 2px;
         color: var(--text-color-on-secondary);
+        box-shadow: none;
     }
     
     #header > #top-row > #route-name-input {   
         font-size: 20px;
         padding: 0;
-        max-width: 70%;
+        max-width: 80%;
     }
     
     #header > #top-row > #settings-button {
@@ -280,7 +281,7 @@ createYoffeeElement("single-route-page", (props, self) => {
         height: 30px;
         font-size: 14px;
         opacity: 0.8;
-        margin-left: 44px;
+        margin-left: 36px;
     }
     
     #setter-button {
@@ -348,17 +349,15 @@ createYoffeeElement("single-route-page", (props, self) => {
         display: flex;
         height: inherit;
         position: relative;
-        /*margin-bottom: 70px;*/
         /*background-image: url("../res/wall.jpg"); DEFINED BELOW */
         background-size: 100% 100%; /* Stretches the image to fit the div exactly */
         background-position: center; /* Centers the image in the div */
         background-repeat: no-repeat; /* Prevents tiling */
-        background-color: #ffffffe0;
+        background-color: transparent;
         max-width: 75vh;
         align-self: center;
         flex: 1;
         overflow: hidden; /* for iphone shit */
-        min-width: 100%;
         width: 100%;
     }
     
@@ -414,6 +413,7 @@ createYoffeeElement("single-route-page", (props, self) => {
         background-color: var(--background-color-3);
         width: 20px;
         height: 20px;
+        gap: 10px;
     }
     
     #bottom-buttons > #heart-button[liked] {
@@ -448,8 +448,10 @@ createYoffeeElement("single-route-page", (props, self) => {
         color: var(--text-color-on-secondary);
     }
     
-    #plus-button {
+    #bottom-buttons > #plus-button {
         background-color: var(--secondary-color);
+        color: var(--text-color-on-secondary);
+        width: fit-content;
     }
     
     yoffee-list-location-marker {
@@ -498,6 +500,7 @@ ${() => GlobalState.loading ? html()`
                     changed=${() => () => saveRoute()}
                     submitted=${() => () => console.log("Submitted.")}
                     onfocus=${e => !e.target.selected && e.target.select()}
+                    disabled=${() => GlobalState.configuringHolds}
         ></text-input>
         
         ${() => !GlobalState.configuringHolds && html()`
@@ -699,7 +702,11 @@ ${() => GlobalState.loading ? html()`
                   let {hold} = await Api.createHold()
                   GlobalState.holdMapping.set(hold.id, hold)
                   GlobalState.holds = [...GlobalState.holds, hold]
+                  if (GlobalState.holds.length === 1) {
+                      showToast("Drag holds to adjust their position")
+                  }
               }}>
+        Add hold
         <x-icon icon="fa fa-plus"></x-icon>
     </x-button>
     `}

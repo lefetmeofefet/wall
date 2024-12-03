@@ -44,7 +44,9 @@ createYoffeeElement("snake-page", (props, self) => {
         if (playerColor.r === color.r && playerColor.g === color.g && playerColor.b === color.b) {
             let ledGroup = {r: 0, g: 0, b: 0, i: []}
             for (let hold of snakeHolds) {
-                ledGroup.i.push(hold.ledId)
+                if (hold.ledId != null) {
+                    ledGroup.i.push(hold.ledId)
+                }
             }
             await Bluetooth.setLeds([ledGroup])
             randomizeSnake()

@@ -21,13 +21,16 @@ async function queryNeo4j(query, params, options) {
         let result = await driver.executeQuery(
             query,
             params,
-            options
+            {
+                database: Config.neo4j.database,
+                ...options,
+            }
         )
         return result.records.map(record => record.toObject())
     } catch (e) {
         // console.error(e)
         console.trace(e)
-        throw `Error querying neo4j: ${e}`
+        return Promise.reject(`Error querying neo4j: ${e}`)
     }
 }
 

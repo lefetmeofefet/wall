@@ -36,6 +36,7 @@ const Config = {
         uri: process.env.NEO4J_URI,
         user: process.env.NEO4J_USER,
         password: process.env.NEO4J_PASSWORD,
+        database: process.env.NEO4J_DATABASE,
     },
     googleClientId: process.env.GOOGLE_CLIENT_ID,
     JWTPrivateKey: process.env.JWT_PRIVATE_KEY,

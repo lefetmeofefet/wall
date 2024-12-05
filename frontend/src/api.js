@@ -164,8 +164,12 @@ async function deleteRoute(routeId) {
     return await post("/api/deleteRoute", {wallId: GlobalState.selectedWall.id, routeId})
 }
 
-async function createHold(wallId) {
-    return await post("/api/createHold", {wallId: GlobalState.selectedWall.id})
+async function createHold(x, y) {
+    return await post("/api/createHold", {wallId: GlobalState.selectedWall.id, x, y})
+}
+
+async function setHoldLed(holdId, ledId) {
+    return await post("/api/setHoldLed", {wallId: GlobalState.selectedWall.id, holdId, ledId})
 }
 
 async function moveHold(holdId, x, y) {
@@ -212,6 +216,7 @@ const Api = {
     updateLikedStatus,
     deleteRoute,
     createHold,
+    setHoldLed,
     moveHold,
     deleteHold,
     addHoldToRoute,

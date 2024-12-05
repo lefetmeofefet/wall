@@ -52,25 +52,35 @@ createYoffeeElement("routes-page", (props, self) => {
         margin-top: 10px;
     }
     
-    .bottom-button {
-        border-radius: 1000px;
-        position: fixed;
+    #bottom-buttons {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        gap: 15px;
         right: 13%;
         bottom: 50px;
-        color: var(--text-color-on-secondary);
-        width: 30px;
-        height: 30px;
-        background-color: var(--secondary-color);
     }
     
-    #clear-leds-button {
+    #bottom-buttons > .bottom-button {
+        border-radius: 1000px;
+        color: var(--text-color-on-secondary);
+        height: 30px;
+        background-color: var(--secondary-color);
+        width: fit-content;
+        min-width: 30px;
+    }
+    
+    #bottom-buttons > #new-route-button {
+        gap: 5px;
+    }
+    
+    #bottom-buttons > #clear-leds-button {
         background-color: var(--background-color);
-        right: calc(13% + 75px);
         font-size: 20px;
         color: var(--text-color);
     }
     
-    #slash-div {
+    #bottom-buttons > #clear-leds-button > #slash-div {
         position: absolute;
         margin-left: 1px;
         margin-bottom: 0px;
@@ -96,24 +106,27 @@ ${() => GlobalState.holds.length === 0 && html()`
 
 <routes-list onscroll=${e => onScroll(e.target.scrollTop)}></routes-list>
 
-<x-button id="new-route-button"
-          class="bottom-button"
-          onclick=${async () => {
-        let {route} = await Api.createRoute()
-        route.isNew = true
-        GlobalState.routes = [...GlobalState.routes, route]
-        await enterRoutePage(route)
-    }}>
-    <x-icon icon="fa fa-plus"></x-icon>
-</x-button>
-
-<x-button id="clear-leds-button"
-          class="bottom-button"
-          onclick=${async () => {
-        await Bluetooth.clearLeds()
-    }}>
-    <x-icon icon="fa fa-lightbulb"></x-icon>
-    <div id="slash-div"></div>
-</x-button>
+<div id="bottom-buttons">
+    <x-button id="clear-leds-button"
+              class="bottom-button"
+              onclick=${async () => {
+                    await Bluetooth.clearLeds()
+                }}>
+        <x-icon icon="fa fa-lightbulb"></x-icon>
+        <div id="slash-div"></div>
+    </x-button>
+    
+    <x-button id="new-route-button"
+              class="bottom-button"
+              onclick=${async () => {
+                    let {route} = await Api.createRoute()
+                    route.isNew = true
+                    GlobalState.routes = [...GlobalState.routes, route]
+                    await enterRoutePage(route)
+                }}>
+        ${() => GlobalState.routes.length === 0 && "Create Route"}
+        <x-icon icon="fa fa-plus"></x-icon>
+    </x-button>
+</div>
 `
 });

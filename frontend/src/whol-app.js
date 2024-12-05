@@ -4,6 +4,9 @@ import "./login-page/login-page.js"
 import "./walls-page/walls-page.js"
 import "./snake-page.js"
 import "./single-route-page/single-route-page.js"
+import "./edit-wall-page/edit-wall-page.js"
+import "./secondary-header.js"
+import "./wall-element.js"
 import "./header.js"
 import "./footer.js"
 import "./routes-page/routes-page.js"
@@ -12,7 +15,7 @@ import "./components/x-button.js"
 import "./components/x-icon.js"
 import "./components/x-tag.js"
 
-createYoffeeElement("wall-app", (props, self) => {
+createYoffeeElement("whol-app", (props, self) => {
     let state = {
 
     };
@@ -34,9 +37,9 @@ ${() => {
     } else if (GlobalState.selectedWall == null) {
         return html()`<walls-page></walls-page>`
     } else if (GlobalState.selectedRoute != null) {
-        return html()`<single-route-page route=${() => GlobalState.selectedRoute}></single-route-page>`
-    } else if (GlobalState.configuringHolds) {
         return html()`<single-route-page></single-route-page>`
+    } else if (GlobalState.configuringHolds) {
+        return html()`<edit-wall-page></edit-wall-page>`
     } else if (GlobalState.isSnaking) {
         return html()`<snake-page></snake-page>`
     } else {

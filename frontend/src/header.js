@@ -17,6 +17,21 @@ import {enterFullscreen, exitFullscreen, isFullScreen} from "../utilz/fullscreen
 import {debounce} from "../utilz/debounce.js";
 
 
+let uploadImage = async () => {
+    GlobalState.loading = true
+    try {
+        let file = await loadFile("image/*")
+        console.log("Got file!")
+        await Api.setWallImage(file)
+        await loadRoutesAndHolds(true)
+        showToast("Image updated!")
+    } catch(e) {
+    } finally {
+        GlobalState.loading = false
+    }
+}
+
+
 createYoffeeElement("header-bar", (props, self) => {
     let state = {
         searchMode: false
@@ -58,20 +73,6 @@ createYoffeeElement("header-bar", (props, self) => {
         }
     }
     const updateSearchDebounce = debounce(updateSearch, 300)
-
-    let uploadImage = async () => {
-        GlobalState.loading = true
-        try {
-            let file = await loadFile("image/*")
-            console.log("Got file!")
-            await Api.setWallImage(file)
-            await loadRoutesAndHolds(true)
-            showToast("Image updated!")
-        } catch(e) {
-        } finally {
-            GlobalState.loading = false
-        }
-    }
 
     return html(GlobalState, state)`
 <style>
@@ -327,7 +328,7 @@ ${() => GlobalState.selectedWall != null && html()`
         </x-button>
         <x-button class="settings-item"
                   onclick=${() => uploadImage()}>
-            <x-icon icon="fa fa-file-image"></x-icon>
+            <x-icon icon="fa fa-cloud-upload-alt"></x-icon>
             Change wall image
         </x-button>
         <x-button class="settings-item"
@@ -369,12 +370,12 @@ ${() => GlobalState.selectedWall != null && html()`
             </div>
         </x-button>
         <x-button class="settings-item"
-                  id="auto-leds">
+                  id="auto-leds"
+                  onclick=${() => setAutoLeds(!GlobalState.autoLeds)}>
             <x-icon icon="fa fa-bolt"></x-icon>
             <div>Auto leds</div>
             <x-switch value=${() => GlobalState.autoLeds}
-                      style="--circle-size: 20px; margin-left: auto; padding-left: 10px;"
-                      switched=${() => () => setAutoLeds(!GlobalState.autoLeds)}>
+                      style="--circle-size: 20px; margin-left: auto; padding-left: 10px;">
             </x-switch>
         </x-button>
         <x-button class="settings-item"
@@ -385,16 +386,16 @@ ${() => GlobalState.selectedWall != null && html()`
         </x-button>
         `}
         
-        <div id="theme-toggle"
-             class="settings-item">
+        <x-button class="settings-item"
+                  id="theme-toggle"
+                  onclick=${() => updateTheme(!GlobalState.darkTheme)}>
             <x-icon icon=${() => GlobalState.darkTheme ? "fa fa-moon" : "fa fa-sun"}></x-icon>
             <div>Theme:</div>
             <x-switch value=${() => GlobalState.darkTheme}
-                      style="--circle-size: 20px; margin-left: auto; padding-left: 10px;"
-                      switched=${() => () => updateTheme(!GlobalState.darkTheme)}>
+                      style="--circle-size: 20px; margin-left: auto; padding-left: 10px;">
                  ${() => GlobalState.darkTheme ? "dark" : "light"}
             </x-switch>
-        </div>
+        </x-button>
         <x-button class="settings-item"
                   id="fullscreen"
                   onclick=${() => {
@@ -449,3 +450,5 @@ ${() => GlobalState.selectedWall != null && html()`
 </x-dialog>
 `
 })
+
+export {uploadImage}

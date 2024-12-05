@@ -315,15 +315,15 @@ async function getHolds(wallId) {
     `, {wallId})
 }
 
-async function createHold(wallId) {
+async function createHold(wallId, x, y) {
     return await queryNeo4jSingleResult(`
     // We want sequential ids so we use Counter node
     MATCH (wall:Wall{id: $wallId})
     
     CREATE (hold:Hold{
         id: randomUUID(),
-        x: 0.5,
-        y: 0.5,
+        x: $x,
+        y: $y,
         ledId: NULL
     })
     CREATE (wall) -[:has]-> (hold)
@@ -331,7 +331,7 @@ async function createHold(wallId) {
            hold.ledId as ledId,
            hold.x as x,
            hold.y as y
-    `, {wallId})
+    `, {wallId, x, y})
 }
 
 async function setHoldLed(wallId, holdId, ledId) {

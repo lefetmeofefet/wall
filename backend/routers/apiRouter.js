@@ -7,7 +7,7 @@ import {
     getRoutes, getUserById,
     getWallInfo, getWalls, moveHold, removeHoldFromRoute, setRouteStars, setUserNickname, setWallBrightness,
     setWallImage, setWallName, connectToWall, connectToWallByCode, updateLikedStatus,
-    updateRoute, updateSentStatus, isMacAddressLinkedToWall, setWallMacAddress, deleteWall
+    updateRoute, updateSentStatus, isMacAddressLinkedToWall, setWallMacAddress, deleteWall, setHoldLed
 } from "../db.js";
 import express from "express";
 
@@ -125,9 +125,16 @@ router.post('/deleteRoute', async (req, res) => {
 })
 
 router.post('/createHold', async (req, res) => {
-    const {wallId} = req.body
+    const {wallId, x, y} = req.body
     res.json({
-        hold: await createHold(wallId)
+        hold: await createHold(wallId, x, y)
+    })
+})
+
+router.post('/setHoldLed', async (req, res) => {
+    const {wallId, holdId, ledId} = req.body
+    res.json({
+        hold: await setHoldLed(wallId, holdId, ledId)
     })
 })
 

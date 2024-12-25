@@ -8,7 +8,8 @@ import {Bluetooth} from "../bluetooth.js";
 createYoffeeElement("single-route-page", (props, self) => {
     let state = {
         editMode: GlobalState.selectedRoute?.isNew,
-        highlightingRoute: GlobalState.autoLeds
+        editingTitle: false,
+        highlightingRoute: GlobalState.autoLeds,
     }
     if (GlobalState.selectedRoute?.isNew) {
         GlobalState.selectedRoute.isNew = undefined
@@ -55,39 +56,50 @@ createYoffeeElement("single-route-page", (props, self) => {
             showToast("Click the edit button to edit the route")
         }
 
+        let holdWasInRoute = hold.inRoute
+
         if (state.editMode) {
             if (isLongPress) {
-                hold.inRoute = true
-                // Cycle between start and finish holds on long press
-                if (hold.holdType === "start") {
+                if (hold.inRoute) {
+                    // If it's in route, remove hold from route
+                    hold.holdType = ""
+                    hold.inRoute = false
+                } else {
+                    // If it's not in route, add it as finish hold
                     hold.holdType = "finish"
-                } else {
-                    hold.holdType = "start"
+                    hold.inRoute = true
                 }
-
-                if (state.highlightingRoute) {
-                    await Bluetooth.setHoldState(hold)
-                }
-
-                // If its in route, we remove it to add it again with a different holdType
-                if (hold.inRoute) {
-                    await Api.removeHoldFromRoute(hold.id, GlobalState.selectedRoute.id)
-                }
-                await Api.addHoldToRoute(hold.id, GlobalState.selectedRoute.id, hold.holdType)
-                GlobalState.selectedRoute.holds.push({id: hold.id, ledId: hold.ledId, holdType: hold.holdType})
             } else {
-                hold.inRoute = !hold.inRoute
-                hold.holdType = ""
-                if (state.highlightingRoute) {
-                    await Bluetooth.setHoldState(hold)
+                if (!hold.inRoute) {
+                    hold.inRoute = true
+                    hold.holdType = ""
+                } else if (hold.holdType === "") {
+                    hold.holdType = "start"
+                } else if (hold.holdType === "start") {
+                    hold.holdType = "finish"
+                } else if (hold.holdType === "finish") {
+                    hold.holdType = ""
+                    hold.inRoute = false
                 }
+            }
+
+            // Set Bluetooth LED
+            if (state.highlightingRoute) {
+                await Bluetooth.setHoldState(hold)
+            }
+
+            // Update DB
+            if (holdWasInRoute) {
+                await Api.removeHoldFromRoute(hold.id, GlobalState.selectedRoute.id)
                 if (hold.inRoute) {
-                    await Api.addHoldToRoute(hold.id, GlobalState.selectedRoute.id)
-                    GlobalState.selectedRoute.holds.push({id: hold.id, ledId: hold.ledId})
+                    // If we just change its type, we have to remove it to add it again with a different holdType
+                    await Api.addHoldToRoute(hold.id, GlobalState.selectedRoute.id, hold.holdType)
                 } else {
-                    await Api.removeHoldFromRoute(hold.id, GlobalState.selectedRoute.id)
                     GlobalState.selectedRoute.holds = GlobalState.selectedRoute.holds.filter(h => h.id !== hold.id)
                 }
+            } else {
+                await Api.addHoldToRoute(hold.id, GlobalState.selectedRoute.id, hold.holdType)
+                GlobalState.selectedRoute.holds.push({id: hold.id, ledId: hold.ledId})
             }
         }
     }
@@ -232,19 +244,31 @@ createYoffeeElement("single-route-page", (props, self) => {
         color: var(--text-color-on-secondary);
     }
     
+    #bottom-buttons > #finish-button {
+        width: unset;
+        background-color: var(--secondary-color);
+    }
+    
     yoffee-list-location-marker {
         display: none;
     }
 </style>
 
-<secondary-header>
+<secondary-header showconfirmbutton=${() => state.editingTitle}>
     <text-input id="route-name-input"
                 class="header-input"
                 slot="title"
-                value=${() => GlobalState.selectedRoute?.name || "Configuring wall"}
-                changed=${() => () => saveRoute()}
-                submitted=${() => () => console.log("Submitted.")}
-                onfocus=${e => !e.target.selected && e.target.select()}
+                value=${() => GlobalState.selectedRoute?.name}
+                changed=${() => async () => {
+                    await saveRoute()
+                }}
+                onblur=${() => state.editingTitle = false}
+                onfocus=${e => {
+                    if (!e.target.selected) {
+                        e.target.select()
+                        state.editingTitle = true
+                    }
+                }}
     ></text-input>
     
     <x-button slot="dialog-item"
@@ -328,10 +352,19 @@ createYoffeeElement("single-route-page", (props, self) => {
 
 <wall-element showallholds=${() => state.editMode}
               onclickhold=${e => holdClicked(e.detail.hold, e.detail.long)}>
-              
 </wall-element>
 
 <div id="bottom-buttons">
+    ${() => state.editMode ? html()`
+    <!-- Important for making justify-content: space-evenly work-->
+    <div id="placeholder" style="width: 52px;"></div>
+    <x-button id="finish-button"
+              active
+              onclick=${() => state.editMode = false}>
+        <x-icon icon="fa fa-check"></x-icon>
+        Finish editing
+    </x-button>
+    ` : html()`
     <x-button id="heart-button"
               liked=${() => GlobalState.selectedRoute?.liked} 
               onclick=${() => toggleLikeRoute(GlobalState.selectedRoute)}>
@@ -363,28 +396,28 @@ createYoffeeElement("single-route-page", (props, self) => {
     <x-button id="edit-button"
               active=${() => state.editMode}
               onclick=${async () => {
-                  state.editMode = !state.editMode
-                  if (state.editMode) {
-                      if (!localStorage.getItem("edit_holds_toasted")) {
-                          localStorage.setItem("edit_holds_toasted", "true")
-                          showToast("Click holds to edit the route! long press to cycle start/finish hold")
-                      }
+                  state.editMode = true
+                  if (!localStorage.getItem("edit_holds_toasted")) {
+                      localStorage.setItem("edit_holds_toasted", "true")
+                      showToast("Click holds to edit the route, long press to remove hold")
                   }
               }}>
         <x-icon icon="fa fa-edit"></x-icon>
     </x-button>
     
+    `}
+    
     <x-button id="turn-on-leds-button"
               active=${() => state.highlightingRoute}
               onclick=${async () => {
-                  if (state.highlightingRoute) {
-                      await Bluetooth.clearLeds()
-                  } else {
-                      await Bluetooth.highlightRoute(GlobalState.selectedRoute)
-                  }
-                  
-                  state.highlightingRoute = !state.highlightingRoute
-              }}>
+                    if (state.highlightingRoute) {
+                        await Bluetooth.clearLeds()
+                    } else {
+                        await Bluetooth.highlightRoute(GlobalState.selectedRoute)
+                    }
+            
+                    state.highlightingRoute = !state.highlightingRoute
+                }}>
         <x-icon icon="fa fa-lightbulb"></x-icon>
     </x-button>
 </div>

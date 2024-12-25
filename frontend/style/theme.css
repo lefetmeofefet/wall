@@ -12,7 +12,6 @@ body[theme="light"] {
 
 body {
     --secondary-color-rgb: 67, 185, 194;
-    --text-on-secondary: rgb(240, 240, 240);
     
     --background-color: rgb(var(--background-color-rgb));
     --secondary-color: rgb(var(--secondary-color-rgb));
@@ -21,6 +20,7 @@ body {
     --secondary-color-weak-3: rgb(var(--secondary-color-rgb), 0.1);
     --text-color: rgb(var(--text-color-rgb));
     --text-color-on-secondary: rgb(240, 240, 240);
+    --text-color-on-secondary-weak: rgb(240, 240, 240, 0.5);
     --text-color-weak: rgb(var(--text-color-rgb), 0.7);
     --text-color-weak-1: rgb(var(--text-color-rgb), 0.5);
     --text-color-weak-2: rgb(var(--text-color-rgb), 0.3);

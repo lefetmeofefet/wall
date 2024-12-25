@@ -15,6 +15,7 @@ import {loadFile} from "../utilz/load-file.js";
 import {Bluetooth} from "./bluetooth.js";
 import {enterFullscreen, exitFullscreen, isFullScreen} from "../utilz/fullscreen.js";
 import {debounce} from "../utilz/debounce.js";
+import {renderBtIcon} from "./footer.js";
 
 
 let uploadImage = async () => {
@@ -87,6 +88,7 @@ createYoffeeElement("header-bar", (props, self) => {
     #title {
         font-size: 55px;
         overflow: hidden;
+        user-select: none;
     }
     
     @media (max-width: 380px) {
@@ -194,7 +196,8 @@ createYoffeeElement("header-bar", (props, self) => {
         align-items: center;
     }
     
-    #settings-container > .settings-item > x-icon {
+    #settings-container > .settings-item > x-icon,
+    #settings-container > .settings-item > .bt-icon {
         width: 20px;
         margin-right: 10px;
     }
@@ -313,6 +316,14 @@ ${() => GlobalState.selectedWall != null && html()`
         
         
         ${() => GlobalState.selectedWall != null && html()`
+        
+        ${() => !GlobalState.bluetoothConnected && html()`
+        <x-button class="settings-item"
+                  onclick=${() => Bluetooth.connectToWall()}>
+            ${() => renderBtIcon()}
+            Connect to wall
+        </x-button>
+        `}
         <x-button class="settings-item"
                   onclick=${async () => {
                       await navigator.clipboard.writeText(`${window.location.origin}/?code=${GlobalState.selectedWall.code}`)
@@ -321,7 +332,8 @@ ${() => GlobalState.selectedWall != null && html()`
                   }}>
             <x-icon icon="fa fa-share-alt"></x-icon>
             Copy Invite link
-        </x-button><x-button class="settings-item"
+        </x-button>
+        <x-button class="settings-item"
                   onclick=${() => enterConfigureHoldsPage()}>
             <x-icon icon="fa fa-hand-rock"></x-icon>
             Configure Holds

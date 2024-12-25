@@ -171,6 +171,9 @@ async function toggleSentRoute(route) {
         GlobalState.selectedWall.sentRouteIds.delete(route.id)
     }
     await Api.updateSentStatus(route.id, route.sent)
+    if (route.sent) {
+        showToast("Congratulations! Marked as sent.")
+    }
 }
 
 function onBackClicked() {

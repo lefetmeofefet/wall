@@ -16,11 +16,13 @@ function filterTypeToHtml(filterType) {
 }
 
 const SORT_TYPES = {
-    NEWEST: "New",
+    NEWEST: "Newest",
     RATING: "Rating",
     MOST_SENDS: "Most sends",
     LEAST_SENDS: "Least sends",
-    OLDEST: "Old",
+    OLDEST: "Oldest",
+    HARDEST: "Hardest",
+    EASIEST: "Easiest",
 }
 
 const FILTER_TYPES = {
@@ -44,8 +46,8 @@ createYoffeeElement("routes-filter", (props, self) => {
             existingFilter.value = value
         } else {
             GlobalState.filters.push({type: filterType, value})
+            GlobalState.filters = [...GlobalState.filters]
         }
-        GlobalState.filters = [...GlobalState.filters]
     }
 
     function createFilter(filterType) {
@@ -53,13 +55,16 @@ createYoffeeElement("routes-filter", (props, self) => {
 
         if (filterType === FILTER_TYPES.GRADE) {
             setFilter(FILTER_TYPES.GRADE, {min: 0, max: 18})
-            state.editedFilterType = filterType
-            self.shadowRoot.querySelector("#edit-filter-dialog").open(self, true)
+
+            let gradeTag = self.shadowRoot.querySelector(`.tag[data-filter-type="${filterTypeToHtml(FILTER_TYPES.GRADE)}"]`)
+            gradeTag.dispatchEvent(new Event('mousedown'))
+            gradeTag.focus()
         } else if (filterType === FILTER_TYPES.SETTER) {
             setFilter(FILTER_TYPES.SETTER, GlobalState.user)
             state.editedFilterType = filterType
             let setterTag = self.shadowRoot.querySelector(`.tag[data-filter-type="${filterTypeToHtml(FILTER_TYPES.SETTER)}"]`)
-            self.shadowRoot.querySelector("#edit-filter-dialog").open(setterTag, true)
+            setterTag.dispatchEvent(new Event('mousedown'))
+            setterTag.focus()
         } else if (filterType === FILTER_TYPES.RATING) {
             setFilter(FILTER_TYPES.RATING, 1)
         } else if (filterType === FILTER_TYPES.LIKED_ROUTES) {
@@ -113,11 +118,11 @@ createYoffeeElement("routes-filter", (props, self) => {
     :host {
         display: flex;
         overflow-x: auto;
-        gap: 2px;
+        gap: 3px;
         margin-top: 3px;
         padding-bottom: 5px;
         /*flex-wrap: wrap;*/
-        min-height: 28px; /* Shit fix for iphone, find better solution*/
+        min-height: 30px; /* Shit fix for iphone, find better solution*/
         /*min-height: fit-content;*/
     }
     
@@ -131,9 +136,9 @@ createYoffeeElement("routes-filter", (props, self) => {
         display: flex;
         align-items: center;
         border-radius: 100px;
-        font-size: 12px;
+        font-size: 14px;
         padding: 5px 10px;
-        gap: 3px;
+        gap: 5px;
         background-color: var(--secondary-color-weak-3);
         border: 0 solid var(--secondary-color);
         color: var(--secondary-color);
@@ -144,6 +149,8 @@ createYoffeeElement("routes-filter", (props, self) => {
     
     .tag > .delete-icon {
         padding: 3px;
+        margin-left: 3px;
+        color: var(--text-color-weak-1);
     }
     
     .dropdown-list-dialog > .item {
@@ -221,7 +228,7 @@ createYoffeeElement("routes-filter", (props, self) => {
     }}
     onblur=${() => requestAnimationFrame(() => self.shadowRoot.querySelector("#sorting-dialog").close())}>
     <x-icon icon="fa fa-exchange-alt"></x-icon>
-    Sort by: ${() => GlobalState.sorting}
+    ${() => GlobalState.sorting}
 </x-button>
 <x-dialog id="sorting-dialog"
           class="dropdown-list-dialog">
@@ -237,7 +244,7 @@ createYoffeeElement("routes-filter", (props, self) => {
     `)}
 </x-dialog>
 
-${() => GlobalState.filters.map(filter => html()`
+${() => GlobalState.filters.map(filter => html(filter)`
 <x-button class="tag"
           data-filter-type=${() => filterTypeToHtml(filter.type)}
           tabindex="0"
@@ -250,9 +257,14 @@ ${() => GlobalState.filters.map(filter => html()`
     ${() => {
         // Renders filter
         if (filter.type === FILTER_TYPES.GRADE) {
-            return filter.value.min === filter.value.max ? `Grade: V${filter.value.min}` : `Grade: V${filter.value.min} - V${filter.value.max}`
+            return filter.value.min === filter.value.max ? `V${filter.value.min}` : `V${filter.value.min} - V${filter.value.max}`
         } else if (filter.type === FILTER_TYPES.SETTER) {
-            return `Setter: ${filter.value.id === GlobalState.user.id ? "Me" : filter.value.nickname}`
+            return html()`
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <x-icon icon="fa fa-user" style="color: var(--text-color-weak);"></x-icon>
+                ${filter.value.id === GlobalState.user.id ? "Me" : filter.value.nickname}
+            </div>
+            `
         } else if (filter.type === FILTER_TYPES.RATING) {
             return html()`
             <div class="stars-container">
@@ -313,15 +325,12 @@ ${() => GlobalState.filters.map(filter => html()`
                                  max="18"
                                  step
                                  updated=${() => ({min, max}) => {
-                                     existingFilter.min = Math.round(min)
-                                     existingFilter.max = Math.round(max)
-                                     sliderState.min = existingFilter.min
-                                     sliderState.max = existingFilter.max
+                                     existingFilter.value.min = Math.round(min)
+                                     existingFilter.value.max = Math.round(max)
+                                     sliderState.min = existingFilter.value.min
+                                     sliderState.max = existingFilter.value.max
                                  }}
-                                 released=${() => () => {
-                                     setFilter(FILTER_TYPES.GRADE, existingFilter)
-                                     requestAnimationFrame(() => self.shadowRoot.querySelector("#edit-filter-dialog").close())
-                                 }}>
+                                 released=${() => () => setFilter(FILTER_TYPES.GRADE, existingFilter.value)}>
                 </x-double-slider>
                 <div class="v-number">V${() => sliderState.max}</div>
             </div>

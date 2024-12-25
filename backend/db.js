@@ -232,7 +232,7 @@ async function createRoute(wallId, setterId) {
            route.name as name, 
            route.grade as grade,
            route.stars as stars,
-           false as sent,
+           0 as sends,
            [{id: setter.id, nickname: setter.nickname}] as setters,
            [] as holds
     `, {wallId, setterId})

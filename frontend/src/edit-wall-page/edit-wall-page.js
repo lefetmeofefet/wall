@@ -74,6 +74,9 @@ createYoffeeElement("edit-wall-page", (props, self) => {
     }
 
     async function wallClicked(e) {
+        if (GlobalState.loading) {
+            return
+        }
         if (state.placingHoldMode) {
             let {x, y} = self.shadowRoot.querySelector("wall-element").convertPointToWallPosition(e.pageX, e.pageY)
             let newHold = await createHold(x, y)
@@ -95,6 +98,17 @@ createYoffeeElement("edit-wall-page", (props, self) => {
     }
 
     async function deleteHold(hold) {
+        // Check if the hold is in a route
+        let routes = GlobalState.routes.filter(
+            route => route.holds.find(holdInRoute => holdInRoute.id === hold.id) != null
+        )
+        if (routes.length !== 0) {
+            showToast(
+                `Hold exists in ${routes.length} routes already: ${routes.map(r => r.name).join(", ")}`,
+                {error: true}
+            )
+            return
+        }
         if (confirm("Delete the selected hold? it would be removed from the wall and all routes containing it")) {
             await Api.deleteHold(hold.id)
             GlobalState.holdMapping.delete(hold.id)
@@ -137,12 +151,17 @@ createYoffeeElement("edit-wall-page", (props, self) => {
     async function toggleHighlightingLed() {
         if (state.highlightingLed) {
             await Bluetooth.clearLeds()
+            state.highlightingLed = false
         } else {
             if (state.selectedHold != null) {
                 await Bluetooth.setHoldState(state.selectedHold)
+                state.highlightingLed = true
+            } else {
+                if (!GlobalState.bluetoothConnected) {
+                    await Bluetooth.connectToWall()
+                }
             }
         }
-        state.highlightingLed = !state.highlightingLed
     }
 
     return html(GlobalState, state)`
@@ -175,7 +194,7 @@ createYoffeeElement("edit-wall-page", (props, self) => {
         align-items: center;
         margin-left: auto;
         font-size: 14px;
-        border: 1px solid var(--text-color-weak-2);
+        border: 1px solid var(--text-color-on-secondary-weak);
         border-radius: 100px;
         overflow: hidden;
         white-space: nowrap;
@@ -323,10 +342,12 @@ ${() => WallImage == null && html()`
 </style>
 `}
 
-<secondary-header>
+<secondary-header hidebackbutton=${() => state.placingHoldMode}
+                  showxbutton=${() => state.selectedHold != null}
+                  xbuttonclicked=${() => () => toggleHold(state.selectedHold)}>
     <div id="title" 
          slot="title">
-        <div id="title-text">${() => state.placingHoldMode ? "Tap anywhere to set hold" : "Configuring wall"}</div>
+        <div id="title-text">${() => state.placingHoldMode ? "Tap anywhere to set hold" : (state.selectedHold == null ? "Configuring wall" : `Hold: ${state.selectedHold.id}`)}</div>
         ${() => state.selectedHold != null && html(state.selectedHold)`
         <div id="led-config-container">
             ${() => state.selectedHold?.ledId == null ? html()`
@@ -367,6 +388,7 @@ ${() => WallImage == null && html()`
 </secondary-header>
 
 <wall-element showallholds
+              style=${() => state.placingHoldMode ? "opacity: 0.6;" : "opacity: 1;"}
               ondraghold=${e => holdDragged(e.detail.hold, e.detail.x, e.detail.y)}
               ondragholdfinish=${e => holdDragFinished(e.detail.hold)}
               onclickhold=${e => holdClicked(e.detail.hold, e.detail.long)}

@@ -2,7 +2,7 @@ import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
 import {GlobalState, onBackClicked} from "./state.js"
 
 createYoffeeElement("secondary-header", (props, self) => {
-    return html(GlobalState)`
+    return html(GlobalState, props)`
 <style>
     :host {
         position: relative;
@@ -37,7 +37,9 @@ createYoffeeElement("secondary-header", (props, self) => {
         -webkit-tap-highlight-color: transparent;
     }
     
-    #top-row > #back-button {
+    #top-row > #back-button,
+    #top-row > #confirm-button,
+    #top-row > #x-button {
         border-radius: 100px;
         width: 10px;
         height: 10px;
@@ -105,10 +107,27 @@ ${() => GlobalState.loading ? html()`
 ` : ""}
 
 <div id="top-row">
+    ${() => !props.hidebackbutton && !props.showconfirmbutton && !props.showxbutton && html()`
     <x-button id="back-button"
               onclick=${() => onBackClicked()}>
         <x-icon icon="fa fa-arrow-left"></x-icon>
     </x-button>
+    `}
+    
+    ${() => props.showconfirmbutton && html()`
+    <x-button id="confirm-button"
+              onclick=${() => console.log("I do nothing")}>
+        <x-icon icon="fa fa-check"></x-icon>
+    </x-button>
+    `}
+    
+    ${() => props.showxbutton && html()`
+    <x-button id="x-button"
+              onclick=${() => props.xbuttonclicked()}>
+        <x-icon icon="fa fa-times"></x-icon>
+    </x-button>
+    `}
+    
     <slot name="title"></slot>
     <div id="settings-button"
               tabindex="0"

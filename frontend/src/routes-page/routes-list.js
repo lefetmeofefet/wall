@@ -94,32 +94,18 @@ createYoffeeElement("routes-list", (props, self) => {
         margin-left: 2px;
     }
     
+    .route > .left-side > .bottom-info > .heart-icon {
+        margin-left: 2px;
+        opacity: 0.8;
+        color: var(--love-color);
+        font-size: 12px;
+    }
+    
     .route > .stars {
         color: #BFA100;
         display: flex;
         font-size: 12px;
         margin-left: auto;
-    }
-    
-    .route > .like-button {
-        margin-bottom: auto;
-        color: var(--text-color);
-        opacity: 0.8;
-        border-radius: 100px;
-        padding: 7px;
-        box-shadow: none;
-        min-width: fit-content;
-    }
-    
-    .route > .like-button[liked] {
-        color: var(--love-color);
-    }
-    
-    @media (hover: hover) and (pointer: fine) {
-        /*This is for mobile because :hover stays on after clicking*/
-        .route > .like-button:hover {
-            color: var(--love-color);
-        }
     }
     
     .route > .grade {
@@ -179,6 +165,10 @@ ${() => {
                 return r1.sends < r2.sends ? 1 : -1
             } else if (GlobalState.sorting === SORT_TYPES.LEAST_SENDS) {
                 return r1.sends < r2.sends ? -1 : 1
+            } else if (GlobalState.sorting === SORT_TYPES.HARDEST) {
+                return r1.grade < r2.grade ? 1 : -1
+            } else if (GlobalState.sorting === SORT_TYPES.EASIEST) {
+                return r1.grade < r2.grade ? -1 : 1
             }
         })
         if (filteredRoutes.length === 0) {
@@ -190,7 +180,7 @@ ${() => {
         return filteredRoutes
             .map(route => html(route)`
 <x-button class="route" 
-          onclick=${() => enterRoutePage(route)}
+          onclick=${() => !GlobalState.loading && enterRoutePage(route)}
           no-ripple>
     <div class="left-side">
         <div class="name">${() => route.name}</div>
@@ -199,6 +189,7 @@ ${() => {
             <!--<div class="dot"></div>-->
             ${() => route.sends === 1 ? "1 send" : route.sends + " sends"}
             ${() => route.sent && html()`<x-icon class="sent-icon" icon="fa fa-check"></x-icon>`}
+            ${() => route.liked && html()`<x-icon class="heart-icon" icon="fa fa-heart"></x-icon>`}
         </div>
     </div>
     
@@ -207,16 +198,6 @@ ${() => {
         ${() => route.stars > 1 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
         ${() => route.stars > 2 ? html()`<x-icon icon="fa fa-star"></x-icon>` : ""}
     </div>
-
-    <x-button class="like-button"
-              liked=${() => route.liked} 
-              onclick=${() => e => {
-            e.stopPropagation();
-            e.preventDefault();
-            toggleLikeRoute(route)
-        }}>
-        <x-icon icon="fa fa-heart"></x-icon>
-    </x-button>
     
     <div class="grade">V${() => route.grade}</div>
 </x-button>`)

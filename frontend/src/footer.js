@@ -14,6 +14,7 @@ createYoffeeElement("footer-bar", (props, self) => {
         height: 40px;
         background-color: var(--background-color-3);
         padding: 0 10%;
+        user-select: none;
     }
     
     @media (max-width: 900px) {
@@ -39,6 +40,10 @@ createYoffeeElement("footer-bar", (props, self) => {
         align-items: center;
         gap: 5px;
         margin-left: auto;
+        background-color: var(--background-color-3);
+        border-radius: 100px;
+        box-shadow: none;
+        padding: 3px 10px;
     }
     
     #connection-status > #check-icon {
@@ -55,13 +60,13 @@ createYoffeeElement("footer-bar", (props, self) => {
     <x-icon icon="fa fa-arrow-left"></x-icon>
     back
 </x-button>
-<div id="connection-status"
+<x-button id="connection-status"
      data-connected=${() => GlobalState.bluetoothConnected}
      onclick=${() => !GlobalState.bluetoothConnected && Bluetooth.connectToWall()}>
     ${() => GlobalState.bluetoothConnected && html()`<x-icon id="check-icon" icon="fa fa-check"></x-icon>`}
     ${() => GlobalState.bluetoothConnected ? "connected" : "not connected"}
     ${renderBtIcon()}
-</div>
+</x-button>
     `
 })
 
@@ -81,3 +86,5 @@ function renderBtIcon() {
 </svg>
     `
 }
+
+export {renderBtIcon}

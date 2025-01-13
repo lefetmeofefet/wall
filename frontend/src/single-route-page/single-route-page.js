@@ -1,5 +1,13 @@
 import {html, createYoffeeElement} from "../../libs/yoffee/yoffee.min.js"
-import {exitRoutePage, GlobalState, onBackClicked, toggleLikeRoute, toggleSentRoute, WallImage} from "../state.js"
+import {
+    exitRoutePage,
+    GlobalState,
+    isAdmin,
+    onBackClicked,
+    toggleLikeRoute,
+    toggleSentRoute,
+    WallImage
+} from "../state.js"
 import {Api} from "../api.js"
 import {showToast} from "../../utilz/toaster.js";
 import {Bluetooth} from "../bluetooth.js";
@@ -94,12 +102,13 @@ createYoffeeElement("single-route-page", (props, self) => {
                 if (hold.inRoute) {
                     // If we just change its type, we have to remove it to add it again with a different holdType
                     await Api.addHoldToRoute(hold.id, GlobalState.selectedRoute.id, hold.holdType)
+                    GlobalState.selectedRoute.holds.find(h => h.id === hold.id).holdType = hold.holdType
                 } else {
                     GlobalState.selectedRoute.holds = GlobalState.selectedRoute.holds.filter(h => h.id !== hold.id)
                 }
             } else {
                 await Api.addHoldToRoute(hold.id, GlobalState.selectedRoute.id, hold.holdType)
-                GlobalState.selectedRoute.holds.push({id: hold.id, ledId: hold.ledId})
+                GlobalState.selectedRoute.holds.push({id: hold.id, ledId: hold.ledId, holdType: hold.holdType})
             }
         }
     }
@@ -258,6 +267,7 @@ createYoffeeElement("single-route-page", (props, self) => {
     <text-input id="route-name-input"
                 class="header-input"
                 slot="title"
+                disabled=${() => GlobalState.user.id !== setterId() && !isAdmin()}
                 value=${() => GlobalState.selectedRoute?.name}
                 changed=${() => async () => {
                     await saveRoute()
@@ -271,6 +281,7 @@ createYoffeeElement("single-route-page", (props, self) => {
                 }}
     ></text-input>
     
+    ${() => (GlobalState.user.id === setterId() || isAdmin()) && html()`
     <x-button slot="dialog-item"
               onclick=${() => self.shadowRoot.querySelector("#route-name-input")?.focus()}>
         <x-icon icon="fa fa-edit" style="width: 20px;"></x-icon>
@@ -286,6 +297,7 @@ createYoffeeElement("single-route-page", (props, self) => {
         <x-icon icon="fa fa-trash" style="width: 20px;"></x-icon>
         Delete route
     </x-button>
+    `}
     
     <div id="bottom-row"
          slot="bottom-row">
@@ -294,9 +306,13 @@ createYoffeeElement("single-route-page", (props, self) => {
             <x-button id="setter-button"
                       tabindex="0"
                       onmousedown=${() => () => {
-                          let _dropdown = self.shadowRoot.querySelector("#setter-dialog")
-                          let _button = self.shadowRoot.querySelector("#setter-button")
-                          _dropdown.toggle(_button, true)
+                          if (GlobalState.user.id === setterId() || isAdmin()) {
+                              let _dropdown = self.shadowRoot.querySelector("#setter-dialog")
+                              let _button = self.shadowRoot.querySelector("#setter-button")
+                              _dropdown.toggle(_button, true)
+                          } else {
+                              alert(`Cannot change route, owner is ${GlobalState.selectedRoute.setters[0]?.nickname}`)
+                          }
                       }}
                       onblur=${() => requestAnimationFrame(() => self.shadowRoot.querySelector("#setter-dialog").close())}>
                 ${() => setterName()}
@@ -323,9 +339,13 @@ createYoffeeElement("single-route-page", (props, self) => {
             <x-button id="grade-button"
                       tabindex="0"
                       onmousedown=${() => () => {
-                            let _dropdown = self.shadowRoot.querySelector("#grade-dialog")
-                            let _button = self.shadowRoot.querySelector("#grade-button")
-                            _dropdown.toggle(_button, true)
+                            if (GlobalState.user.id === setterId() || isAdmin()) {
+                                let _dropdown = self.shadowRoot.querySelector("#grade-dialog")
+                                let _button = self.shadowRoot.querySelector("#grade-button")
+                                _dropdown.toggle(_button, true)
+                            } else {
+                                alert(`Cannot change route, owner is ${GlobalState.selectedRoute.setters[0]?.nickname}`)
+                            }
                         }}
                       onblur=${() => requestAnimationFrame(() => self.shadowRoot.querySelector("#grade-dialog").close())}>
                 V${() => GlobalState.selectedRoute?.grade}
@@ -396,10 +416,14 @@ createYoffeeElement("single-route-page", (props, self) => {
     <x-button id="edit-button"
               active=${() => state.editMode}
               onclick=${async () => {
-                  state.editMode = true
-                  if (!localStorage.getItem("edit_holds_toasted")) {
-                      localStorage.setItem("edit_holds_toasted", "true")
-                      showToast("Click holds to edit the route, long press to remove hold")
+                  if (GlobalState.user.id === setterId() || isAdmin()) {
+                      state.editMode = true
+                      if (!localStorage.getItem("edit_holds_toasted")) {
+                          localStorage.setItem("edit_holds_toasted", "true")
+                          showToast("Click holds to edit the route, long press to remove hold")
+                      }
+                  } else {
+                      alert(`Cannot change route, owner is ${GlobalState.selectedRoute.setters[0]?.nickname}`)
                   }
               }}>
         <x-icon icon="fa fa-edit"></x-icon>

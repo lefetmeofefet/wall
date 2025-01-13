@@ -7,7 +7,7 @@ import {
     getRoutes, getUserById,
     getWallInfo, getWalls, moveHold, removeHoldFromRoute, setRouteStars, setUserNickname, setWallBrightness,
     setWallImage, setWallName, connectToWall, connectToWallByCode, updateLikedStatus,
-    updateRoute, updateSentStatus, isMacAddressLinkedToWall, setWallMacAddress, deleteWall, setHoldLed
+    updateRoute, updateSentStatus, isMacAddressLinkedToWall, setWallMacAddress, deleteWall, setHoldLed, setWallAdmin
 } from "../db.js";
 import express from "express";
 
@@ -165,6 +165,12 @@ router.post('/removeHoldFromRoute', async (req, res) => {
 router.post('/setRouteStars', async (req, res) => {
     const {wallId, routeId, stars} = req.body
     await setRouteStars(wallId, routeId, stars)
+    res.json({status: 'success'})
+})
+
+router.post('/setWallAdmin', async (req, res) => {
+    const {wallId, userId, isAdmin} = req.body
+    await setWallAdmin(wallId, userId, isAdmin)
     res.json({status: 'success'})
 })
 

@@ -197,6 +197,10 @@ async function setRouteStars(routeId, stars) {
     return await post("/api/setRouteStars", {wallId: GlobalState.selectedWall.id, routeId, stars})
 }
 
+async function setWallAdmin(userId, isAdmin) {
+    return await post("/api/setWallAdmin", {wallId: GlobalState.selectedWall.id, userId, isAdmin})
+}
+
 const Api = {
     getUser,
     createLedlessWall,
@@ -226,7 +230,8 @@ const Api = {
     login,
     signUp,
     setNickname,
-    signOut
+    signOut,
+    setWallAdmin
 }
 
 export {Api}

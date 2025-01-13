@@ -86,7 +86,7 @@ async function createLedlessWall(wallName, userId) {
     })
     WITH wall
     MATCH (user:User{id: $userId})
-    MERGE (wall) -[:has]-> (user)
+    MERGE (wall) -[:has{isAdmin: true}]-> (user)
     RETURN wall.id as id
     `, {wallName, userId})
 }
@@ -98,10 +98,13 @@ async function connectToWall(macAddress, wallName, brightness, userId) {
                   wall.code = "${generateCode()}",
                   wall.name = $wallName,
                   wall.brightness = $brightness,
-                  wall.createdAt = timestamp()
+                  wall.createdAt = timestamp(),
+                  wall.createdNow = true
     WITH wall
     MATCH (user:User{id: $userId})
-    MERGE (wall) -[:has]-> (user)
+    MERGE (wall) -[e:has]-> (user)
+    ON CREATE SET e.isAdmin = wall.createdNow
+    SET wall.createdNow = false
     RETURN wall.id as id
     `, {macAddress, wallName, brightness, userId})
 }
@@ -141,9 +144,12 @@ async function isMacAddressLinkedToWall(macAddress) {
 async function getWallInfo(wallId, userId) {
     return await queryNeo4jSingleResult(`
     MATCH (wall:Wall{id: $wallId})
-    OPTIONAL MATCH (wall) -[:has]-> (user:User)
-    WITH wall, collect(user) as users
-    WITH wall, users, [u IN users WHERE u.id = $userId][0] AS user
+    OPTIONAL MATCH (wall) -[e:has]-> (user:User)
+    WITH wall, 
+         COLLECT({id: user.id, nickname: user.nickname, isAdmin: e.isAdmin, node: user}) as users
+    WITH wall, 
+         users, 
+         [u IN users WHERE u.id = $userId][0].node AS user
     OPTIONAL MATCH (wall) -[:has]-> (route:Route) <-[e:sent|liked]- (user)
     WITH wall, 
          users, 
@@ -158,7 +164,7 @@ async function getWallInfo(wallId, userId) {
            wall.createdAt as createdAt,
            sentRouteIds as sentRouteIds,
            likedRouteIds as likedRouteIds,
-           [i IN range(0, size(users) - 1) | {id: users[i].id, nickname: users[i].nickname}] AS users
+           [i IN range(0, size(users) - 1) | {id: users[i].id, nickname: users[i].nickname, isAdmin: users[i].isAdmin}] AS users
     `, {wallId, userId})
 }
 
@@ -181,6 +187,13 @@ async function setWallBrightness(wallId, brightness) {
     MATCH (wall:Wall{id: $wallId})
     SET wall.brightness = $brightness
     `, {wallId, brightness})
+}
+
+async function setWallAdmin(wallId, userId, isAdmin) {
+    await queryNeo4j(`
+    MATCH (wall:Wall{id: $wallId}) -[e:has]-> (user:User{id: $userId}) 
+    SET e.isAdmin = $isAdmin
+    `, {wallId, userId, isAdmin})
 }
 
 async function getRoutes(wallId, whereClause, parameters) {
@@ -476,5 +489,6 @@ export {
     addHoldToRoute,
     removeHoldFromRoute,
     setRouteStars,
-    closeConnection
+    closeConnection,
+    setWallAdmin,
 }

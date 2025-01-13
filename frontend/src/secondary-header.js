@@ -2,6 +2,10 @@ import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
 import {GlobalState, onBackClicked} from "./state.js"
 
 createYoffeeElement("secondary-header", (props, self) => {
+    self.closeSettingsDialog = () => {
+        self.shadowRoot.querySelector("#settings-dialog").close()
+    }
+
     return html(GlobalState, props)`
 <style>
     :host {
@@ -109,7 +113,7 @@ ${() => GlobalState.loading ? html()`
 <div id="top-row">
     ${() => !props.hidebackbutton && !props.showconfirmbutton && !props.showxbutton && html()`
     <x-button id="back-button"
-              onclick=${() => onBackClicked()}>
+              onclick=${() => (props.backclicked || onBackClicked)()}>
         <x-icon icon="fa fa-arrow-left"></x-icon>
     </x-button>
     `}

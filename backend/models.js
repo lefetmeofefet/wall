@@ -1,4 +1,5 @@
 
+
 class Wall {
     constructor(id, name, brightness, image, likedRouteIds, sentRouteIds, users, createdAt) {
         this.id = id
@@ -64,12 +65,13 @@ const AUTH_METHODS = {
 }
 
 class User {
-    constructor(id, email, nickname, passwordHash, authMethod) {
+    constructor(id, email, nickname, passwordHash, authMethod, permissionLevel, isAdmin) {
         this.id = id
         this.email = email
         this.nickname = nickname
         this.passwordHash = passwordHash
         this.authMethod = authMethod
+        this.isAdmin = isAdmin
     }
 
     fromDb(dbObject) {

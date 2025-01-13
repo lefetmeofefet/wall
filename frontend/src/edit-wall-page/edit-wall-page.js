@@ -201,18 +201,6 @@ createYoffeeElement("edit-wall-page", (props, self) => {
         min-width: fit-content;
     }
     
-    @media (max-width: 375px) {
-        #led-config-container {
-            font-size: 12px;
-        }
-        
-        #led-config-container > .cycle-led-button {
-            padding: 5px 10px;
-            height: 18px;
-        }
-    }
-    
-    
     #led-config-container > x-button {
         box-shadow: none;
     }

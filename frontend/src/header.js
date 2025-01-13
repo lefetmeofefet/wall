@@ -3,7 +3,7 @@ import {
     GlobalState,
     loadRoutesAndHolds,
     enterConfigureHoldsPage,
-    exitWall, snakeMeUp, setAutoLeds, updateTheme, signOut
+    exitWall, snakeMeUp, setAutoLeds, updateTheme, signOut, isAdmin
 } from "./state.js";
 import "./components/text-input.js"
 import "./components/x-button.js"
@@ -333,6 +333,8 @@ ${() => GlobalState.selectedWall != null && html()`
             <x-icon icon="fa fa-share-alt"></x-icon>
             Copy Invite link
         </x-button>
+        
+        ${() => isAdmin() && html()`
         <x-button class="settings-item"
                   onclick=${() => enterConfigureHoldsPage()}>
             <x-icon icon="fa fa-hand-rock"></x-icon>
@@ -364,6 +366,13 @@ ${() => GlobalState.selectedWall != null && html()`
             <x-icon icon="fa fa-no-icon-fk"></x-icon>
             Rename wall
         </x-button>
+        <x-button class="settings-item"
+                  onclick=${() => GlobalState.inSettingsPage = true}>
+            <x-icon icon="fa fa-user"></x-icon>
+            Manage user permissions
+        </x-button>
+        `}
+        
         <x-button class="settings-item"
                   onclick=${async () => {
                       let brightness = parseInt(prompt("Enter brightness from 0 to 100: "))
@@ -427,7 +436,7 @@ ${() => GlobalState.selectedWall != null && html()`
         </x-button>
         `}
         
-        ${() => GlobalState.selectedWall?.macAddress != null && html()`
+        ${() => (GlobalState.selectedWall?.macAddress != null && isAdmin()) && html()`
         <x-button class="settings-item"
                   id="unlink-wall"
                   onclick=${async () => {
@@ -440,7 +449,7 @@ ${() => GlobalState.selectedWall != null && html()`
             Unlink wall from LED sytem
         </x-button>
         `}
-        ${() => GlobalState.selectedWall != null && html()`
+        ${() => GlobalState.selectedWall != null && isAdmin() && html()`
         <x-button class="settings-item"
                   id="delete-wall"
                   onclick=${async () => {

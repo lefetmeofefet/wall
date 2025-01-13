@@ -2,6 +2,7 @@ import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
 import {GlobalState, exitRoutePage, unselectHolds} from "./state.js";
 import "./login-page/login-page.js"
 import "./walls-page/walls-page.js"
+import "./settings-page/settings-page.js"
 import "./snake-page.js"
 import "./single-route-page/single-route-page.js"
 import "./edit-wall-page/edit-wall-page.js"
@@ -36,6 +37,8 @@ ${() => {
         return html()`<login-page></login-page>`
     } else if (GlobalState.selectedWall == null) {
         return html()`<walls-page></walls-page>`
+    } else if (GlobalState.inSettingsPage) {
+        return html()`<settings-page></settings-page>`
     } else if (GlobalState.selectedRoute != null) {
         return html()`<single-route-page></single-route-page>`
     } else if (GlobalState.configuringHolds) {

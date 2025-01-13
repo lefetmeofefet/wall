@@ -16,6 +16,7 @@ const GlobalState = {
     loading: false,
     bluetoothConnected: false,
     configuringHolds: false,
+    inSettingsPage: false,
     autoLeds: localStorage.getItem(LOCALSTORAGE_AUTO_LEDS_KEY) === "true",  // Automatically light leds when clicking a route
 
     /** @type {User} */
@@ -44,6 +45,14 @@ const GlobalState = {
     sorting: SORT_TYPES.NEWEST
 };
 window.state = GlobalState
+
+function isAdmin() {
+    if (GlobalState.selectedWall == null) {
+        return
+    }
+    let myUserInWall = GlobalState.selectedWall.users.find(user => user.id === GlobalState.user.id)
+    return myUserInWall?.isAdmin
+}
 
 const LOCALSTORAGE_DARK_THEME_KEY = "darkTheme"
 function updateTheme(isDark) {
@@ -211,5 +220,6 @@ export {
     toggleLikeRoute,
     toggleSentRoute,
     signOut,
-    onBackClicked
+    onBackClicked,
+    isAdmin
 }

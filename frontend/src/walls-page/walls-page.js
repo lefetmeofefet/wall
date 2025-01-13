@@ -39,6 +39,7 @@ createYoffeeElement("walls-page", () => {
 
     async function connectToNearbyWall() {
         let btWall = await Bluetooth.connectToWall()
+        // let btWall = {id: "i_am_shit_mac_address", name: "Fucktest", brightness: 30}
         let macAddress = btWall.id
         let wallId = await Api.connectToWall(macAddress, btWall.name, btWall.brightness)
         await chooseWall(wallId)

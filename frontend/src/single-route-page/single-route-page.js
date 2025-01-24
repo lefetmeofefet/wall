@@ -11,6 +11,8 @@ import {
 import {Api} from "../api.js"
 import {showToast} from "../../utilz/toaster.js";
 import {Bluetooth} from "../bluetooth.js";
+import {ROUTE_TYPES} from "/consts.js";
+
 
 
 createYoffeeElement("single-route-page", (props, self) => {
@@ -125,39 +127,28 @@ createYoffeeElement("single-route-page", (props, self) => {
     #bottom-row {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
+        margin-left: 36px;
+        justify-content: space-between;
     }
     
-    #bottom-row > #setter-container {
+    #bottom-row > #setter-container, #bottom-row > #grade-container, #bottom-row > #type-container {
         display: flex;
         align-items: center;
         gap: 4px;
         height: 30px;
         font-size: 14px;
         opacity: 0.8;
-        margin-left: 36px;
     }
     
-    #setter-button {
+    #setter-button, #grade-button, #type-button {
         gap: 6px;
         padding: 1px 6px;
         box-shadow: none;
-    }
-    
-    #bottom-row > #grade-container {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        height: 30px;
-        font-size: 14px;
-        opacity: 0.8;
-        margin-left: auto;
+        white-space: nowrap;
     }
     
     #grade-button {
-        gap: 6px;
-        padding: 1px 6px;
-        box-shadow: none;
         font-size: 16px;
     }
     
@@ -166,7 +157,7 @@ createYoffeeElement("single-route-page", (props, self) => {
         color: var(--text-color);
     }
     
-    #grade-dialog {
+    #grade-dialog, #setter-dialog {
         max-height: 395px;
         overflow-y: auto;
     }
@@ -174,6 +165,7 @@ createYoffeeElement("single-route-page", (props, self) => {
     .header-dialog > .item {
         padding: 10px 20px;
         cursor: pointer;
+        white-space: nowrap;
     }
     
     #grade-dialog > .item {
@@ -334,8 +326,9 @@ createYoffeeElement("single-route-page", (props, self) => {
             </div>
             `)}
         </x-dialog>
+        
         <div id="grade-container">
-            <div id="grade-prefix">Grade:</div>
+<!--            <div id="grade-prefix">Grade:</div>-->
             <x-button id="grade-button"
                       tabindex="0"
                       onmousedown=${() => () => {
@@ -364,6 +357,40 @@ createYoffeeElement("single-route-page", (props, self) => {
                          await Api.updateRoute(GlobalState.selectedRoute.id, {grade})
                      }}>
                 V${grade}
+            </div>
+            `)}
+        </x-dialog>
+        
+        <div id="type-container">
+<!--            <div id="type-prefix">Type:</div>-->
+            <x-button id="type-button"
+                      tabindex="0"
+                      onmousedown=${() => () => {
+                            if (GlobalState.user.id === setterId() || isAdmin()) {
+                                let _dropdown = self.shadowRoot.querySelector("#type-dialog")
+                                let _button = self.shadowRoot.querySelector("#type-button")
+                                _dropdown.toggle(_button, true)
+                            } else {
+                                alert(`Cannot change route, owner is ${GlobalState.selectedRoute.setters[0]?.nickname}`)
+                            }
+                        }}
+                      onblur=${() => requestAnimationFrame(() => self.shadowRoot.querySelector("#type-dialog").close())}>
+                ${() => GlobalState.selectedRoute?.type}
+                <x-icon icon="fa fa-caret-down"></x-icon>
+            </x-button>
+        </div>
+        <x-dialog id="type-dialog"
+                  class="header-dialog">
+            ${() => [...Object.values(ROUTE_TYPES)]
+                .map(routeType => html()`
+                <div class="item"
+                     data-selected=${() => routeType === GlobalState.selectedRoute?.type}
+                     onclick=${async () => {
+                        GlobalState.selectedRoute.type = routeType
+                        self.shadowRoot.querySelector("#type-dialog").close()
+                        await Api.updateRoute(GlobalState.selectedRoute.id, {type: routeType})
+                    }}>
+                ${() => routeType}
             </div>
             `)}
         </x-dialog>

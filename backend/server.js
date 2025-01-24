@@ -8,6 +8,7 @@ import {ApiRouter} from "./routers/apiRouter.js";
 const app = express()
 
 app.use(express.static('frontend'))
+app.use(express.static('shared'))
 app.use(cookieParser())
 app.use(express.json({limit: "100mb"}))
 

@@ -149,8 +149,12 @@ createYoffeeElement("routes-filter", (props, self) => {
     
     .tag > .delete-icon {
         padding: 3px;
-        margin-left: 3px;
         color: var(--text-color-weak-1);
+    }
+    
+    .dropdown-list-dialog {
+        max-height: 395px;
+        overflow-y: auto;
     }
     
     .dropdown-list-dialog > .item {
@@ -254,6 +258,8 @@ ${() => GlobalState.filters.map(filter => html(filter)`
                   self.shadowRoot.querySelector("#edit-filter-dialog").close()
               }
           })}>
+    <div class="tag-content" 
+         style="border-right: 1px solid var(--text-color-weak-2); padding-right: 6px;">
     ${() => {
         // Renders filter
         if (filter.type === FILTER_TYPES.GRADE) {
@@ -299,6 +305,7 @@ ${() => GlobalState.filters.map(filter => html(filter)`
             `
         }
     }}
+    </div>
     <x-icon class="delete-icon" 
             icon="fa fa-times"
             onmousedown=${e => {

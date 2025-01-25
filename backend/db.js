@@ -331,6 +331,14 @@ async function deleteRoute(wallId, routeId) {
     `, {wallId, routeId})
 }
 
+async function getRouteSenders(wallId, routeId) {
+    return await queryNeo4j(`
+    MATCH (wall:Wall{id: $wallId}) -[:has]-> (route:Route{id: $routeId}) <-[:sent]- (user:User) 
+    RETURN user.id as id, 
+           user.nickname as nickname
+    `, {wallId, routeId})
+}
+
 async function getHolds(wallId) {
     return await readNeo4j(`
     MATCH (wall:Wall{id: $wallId}) -[:has]-> (hold:Hold)
@@ -504,4 +512,5 @@ export {
     setRouteStars,
     closeConnection,
     setWallAdmin,
+    getRouteSenders
 }

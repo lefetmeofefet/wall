@@ -164,6 +164,15 @@ async function deleteRoute(routeId) {
     return await post("/api/deleteRoute", {wallId: GlobalState.selectedWall.id, routeId})
 }
 
+/**
+ * @param routeId
+ * @returns {Promise<User[]>}
+ */
+async function getRouteSenders(routeId) {
+    let response = await post("/api/getRouteSenders", {wallId: GlobalState.selectedWall.id, routeId})
+    return response.senders
+}
+
 async function createHold(x, y) {
     return await post("/api/createHold", {wallId: GlobalState.selectedWall.id, x, y})
 }
@@ -211,6 +220,7 @@ const Api = {
     isMacAddressLinkedToWall,
     getWalls,
     getRoutesAndHolds,
+    getRouteSenders,
     setWallImage,
     setWallName,
     setWallBrightness,

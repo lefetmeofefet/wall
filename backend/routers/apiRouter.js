@@ -1,13 +1,33 @@
 import {
     addHoldToRoute,
-    createHold, createLedlessWall,
-    createRoute, deleteHold,
+    createHold,
+    createLedlessWall,
+    createRoute,
+    deleteHold,
     deleteRoute,
     getHolds,
-    getRoutes, getUserById,
-    getWallInfo, getWalls, moveHold, removeHoldFromRoute, setRouteStars, setUserNickname, setWallBrightness,
-    setWallImage, setWallName, connectToWall, connectToWallByCode, updateLikedStatus,
-    updateRoute, updateSentStatus, isMacAddressLinkedToWall, setWallMacAddress, deleteWall, setHoldLed, setWallAdmin
+    getRoutes,
+    getUserById,
+    getWallInfo,
+    getWalls,
+    moveHold,
+    removeHoldFromRoute,
+    setRouteStars,
+    setUserNickname,
+    setWallBrightness,
+    setWallImage,
+    setWallName,
+    connectToWall,
+    connectToWallByCode,
+    updateLikedStatus,
+    updateRoute,
+    updateSentStatus,
+    isMacAddressLinkedToWall,
+    setWallMacAddress,
+    deleteWall,
+    setHoldLed,
+    setWallAdmin,
+    getRouteSenders
 } from "../db.js";
 import express from "express";
 
@@ -122,6 +142,13 @@ router.post('/deleteRoute', async (req, res) => {
     const {wallId, routeId} = req.body
     await deleteRoute(wallId, routeId)
     res.json({status: 'success'})
+})
+
+router.post('/getRouteSenders', async (req, res) => {
+    const {wallId, routeId} = req.body
+    res.json({
+        senders: await getRouteSenders(wallId, routeId)
+    })
 })
 
 router.post('/createHold', async (req, res) => {

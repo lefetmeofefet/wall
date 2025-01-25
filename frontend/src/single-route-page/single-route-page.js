@@ -275,6 +275,16 @@ createYoffeeElement("single-route-page", (props, self) => {
     
     ${() => (GlobalState.user.id === setterId() || isAdmin()) && html()`
     <x-button slot="dialog-item"
+              onclick=${async () => {
+                  if (GlobalState.selectedRoute?.sends > 0) {
+                      let senders = await Api.getRouteSenders(GlobalState.selectedRoute.id)
+                      alert("Senders:\n" + senders.map(sender => "- " + sender.nickname).join("\n"))
+                  }
+              }}>
+        <x-icon icon="fa fa-check" style="width: 20px;"></x-icon>
+        ${() => GlobalState.selectedRoute?.sends} sends
+    </x-button>
+    <x-button slot="dialog-item"
               onclick=${() => self.shadowRoot.querySelector("#route-name-input")?.focus()}>
         <x-icon icon="fa fa-edit" style="width: 20px;"></x-icon>
         Edit route name

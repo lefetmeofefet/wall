@@ -16,7 +16,7 @@ import "./components/x-button.js"
 import "./components/x-icon.js"
 import "./components/x-tag.js"
 
-createYoffeeElement("whol-app", (props, self) => {
+createYoffeeElement("flashboard-app", (props, self) => {
     let state = {
 
     };

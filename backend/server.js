@@ -24,7 +24,7 @@ app.use((err, req, res, next) => {
 })
 
 app.listen(Config.port, () => {
-    console.log(`WHOL is UP! https://localhost:${Config.port}`)
+    console.log(`Flashboard is UP! https://localhost:${Config.port}`)
 })
 
 process.on('uncaughtException', (err) => {

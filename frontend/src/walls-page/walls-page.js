@@ -51,7 +51,7 @@ createYoffeeElement("walls-page", () => {
             return array[randomIndex]
         }
         let WALL_NAMES = [
-            "WHOL", "WALL",
+            "WHOL", "WALL", "BOARD",
             "WOODY", "WOODY", "WOODY", "WOODY", "WOODY",
             "PLANK", "BORDEN", "CRIMP", "EL CAP", "OFFDWAGON", "CAMP4", "JUGSICLE", "CRAMPS", "BOLDR", "SILENCE", "MEGABOARD", "FINGRTRAP"
         ]

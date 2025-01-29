@@ -364,9 +364,47 @@ ${() => WallImage == null && html()`
     </div>
     
     <x-button slot="dialog-item"
+              id="rename-wall"
+              onclick=${async () => {
+                    let newWallName = prompt("What would you like to call your wall?")
+                    if (newWallName != null) {
+                        GlobalState.loading = true
+                        try {
+                            await Api.setWallName(newWallName)
+                            GlobalState.selectedWall.name = newWallName
+                            GlobalState.selectedWall = {...GlobalState.selectedWall}
+                            if (GlobalState.bluetoothConnected) {
+                                await Bluetooth.setWallName(newWallName)
+                            }
+                        } finally {
+                            GlobalState.loading = false
+                        }
+                    }
+                }}>
+        <x-icon icon="fa fa-edit" style="width: 20px;"></x-icon>
+        Rename wall
+    </x-button>
+    <x-button slot="dialog-item"
               onclick=${() => uploadImage()}>
         <x-icon icon="fa fa-cloud-upload-alt" style="width: 20px;"></x-icon>
         Change wall image
+    </x-button>
+    <x-button slot="dialog-item"
+              onclick=${async () => {
+                    let brightness = parseInt(prompt("Enter brightness from 0 to 100: "))
+                    if (!isNaN(brightness)) {
+                        let realBrightness = Math.round((brightness / 100) * 255)
+                        await Bluetooth.setWallBrightness(realBrightness)
+                        await Api.setWallBrightness(realBrightness)
+                        GlobalState.selectedWall.brightness = realBrightness
+                        GlobalState.selectedWall = {...GlobalState.selectedWall}
+                    }
+                }}>
+        <x-icon icon="fa fa-lightbulb" style="width: 20px;"></x-icon>
+        Brightness:
+        <div style="margin-left: auto">
+            ${() => Math.round((GlobalState.selectedWall?.brightness / 255) * 100)}%
+        </div>
     </x-button>
     <x-button slot="dialog-item"
               onclick=${() => alert("Coming soon!")}>

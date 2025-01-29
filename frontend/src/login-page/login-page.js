@@ -135,9 +135,9 @@ createYoffeeElement("login-page", (props, self) => {
         line-height: 15px;
     }
     
-    #whol {
-        line-height: 60px;
-        font-size: 80px;
+    #flashboard {
+        line-height: 28px;
+        font-size: 37px;
         margin-bottom: 16px;
     }
     
@@ -245,7 +245,7 @@ ${() => state.nicknameMode ?
         html()`
 <div id="welcome">WELCOME</div>
 <div id="to">TO</div>
-<div id="whol">WHOL</div>
+<div id="flashboard">FLASHBOARD</div>
 <text-input id="email-input"
             placeholder="Email"
             type="email"></text-input>

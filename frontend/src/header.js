@@ -261,7 +261,7 @@ ${() => {
 </text-input>
 ` : html()`
 <div id="title">
-    ${() => GlobalState.selectedWall == null ? "WHOL" : GlobalState.selectedWall.name}
+    ${() => GlobalState.selectedWall == null ? "FLASHBOARD" : GlobalState.selectedWall.name}
 </div>
 ${() => GlobalState.selectedWall != null && html()`
 <x-button id="refresh-button"
@@ -338,34 +338,9 @@ ${() => GlobalState.selectedWall != null && html()`
         <x-button class="settings-item"
                   onclick=${() => enterConfigureHoldsPage()}>
             <x-icon icon="fa fa-hand-rock"></x-icon>
-            Configure Holds
+            Configure Wall
         </x-button>
-        <x-button class="settings-item"
-                  onclick=${() => uploadImage()}>
-            <x-icon icon="fa fa-cloud-upload-alt"></x-icon>
-            Change wall image
-        </x-button>
-        <x-button class="settings-item"
-                  id="rename-wall"
-                  onclick=${async () => {
-                      let newWallName = prompt("What would you like to call your wall?")
-                      if (newWallName != null) {
-                          GlobalState.loading = true
-                          try {
-                              await Api.setWallName(newWallName)
-                              GlobalState.selectedWall.name = newWallName
-                              GlobalState.selectedWall = {...GlobalState.selectedWall}
-                              if (GlobalState.bluetoothConnected) {
-                                  await Bluetooth.setWallName(newWallName)
-                              }
-                          } finally {
-                              GlobalState.loading = false
-                          }
-                      }
-                  }}>
-            <x-icon icon="fa fa-no-icon-fk"></x-icon>
-            Rename wall
-        </x-button>
+        
         <x-button class="settings-item"
                   onclick=${() => GlobalState.inSettingsPage = true}>
             <x-icon icon="fa fa-user"></x-icon>
@@ -373,23 +348,6 @@ ${() => GlobalState.selectedWall != null && html()`
         </x-button>
         `}
         
-        <x-button class="settings-item"
-                  onclick=${async () => {
-                      let brightness = parseInt(prompt("Enter brightness from 0 to 100: "))
-                      if (!isNaN(brightness)) {
-                          let realBrightness = Math.round((brightness / 100) * 255)
-                          await Bluetooth.setWallBrightness(realBrightness)
-                          await Api.setWallBrightness(realBrightness)
-                          GlobalState.selectedWall.brightness = realBrightness
-                          GlobalState.selectedWall = {...GlobalState.selectedWall}
-                      }
-                  }}>
-            <x-icon icon="fa fa-lightbulb"></x-icon>
-            Brightness:
-            <div style="margin-left: auto">
-                ${() => Math.round((GlobalState.selectedWall?.brightness / 255) * 100)}%
-            </div>
-        </x-button>
         <x-button class="settings-item"
                   id="auto-leds"
                   onclick=${() => setAutoLeds(!GlobalState.autoLeds)}>

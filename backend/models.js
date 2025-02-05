@@ -22,7 +22,7 @@ class Wall {
 }
 
 class Route {
-    constructor(id, name, grade, setters, holds, sent, liked, sends, createdAt) {
+    constructor(id, name, grade, setters, holds, sent, liked, sends, createdAt, lists) {
         this.id = id
         this.name = name
         this.grade = grade
@@ -37,6 +37,7 @@ class Route {
         this.liked = liked
         this.sends = sends
         this.createdAt = createdAt
+        this.lists = lists
     }
 
     fromDb(dbObject) {

@@ -216,6 +216,7 @@ async function getRoutes(wallId, whereClause, parameters) {
            route.grade as grade,
            route.stars as stars,
            route.type as type,
+           route.lists as lists,
            sends as sends,
            [setter IN setters | {id: setter.id, nickname: setter.nickname}] AS setters,
            [i IN range(0, size(holds) - 1) | {id: holds[i].id, ledId: holds[i].ledId, holdType: holdEdges[i].holdType}] AS holds
@@ -239,6 +240,7 @@ async function createRoute(wallId, setterId) {
         name: "I AM ROUTE",
         stars: 0,
         grade: 3,
+        lists: [],
         type: "${ROUTE_TYPES.ALL_HOLDS}"
     })
     CREATE (wall) -[:has]-> (route)
@@ -249,6 +251,7 @@ async function createRoute(wallId, setterId) {
            route.grade as grade,
            route.stars as stars,
            route.type as type,
+           route.lists as lists,
            0 as sends,
            [{id: setter.id, nickname: setter.nickname}] as setters,
            [] as holds
@@ -256,7 +259,7 @@ async function createRoute(wallId, setterId) {
 }
 
 async function updateRoute(wallId, routeId, routeFields) {
-    if (routeFields.name != null || routeFields.grade != null || routeFields.type != null) {
+    if (routeFields.name != null || routeFields.grade != null || routeFields.type != null || routeFields.lists != null) {
         let updateStatements = []
         if (routeFields.name != null) {
             updateStatements.push("route.name = $name")
@@ -267,17 +270,24 @@ async function updateRoute(wallId, routeId, routeFields) {
         if (routeFields.type != null) {
             updateStatements.push("route.type = $type")
         }
+        if (routeFields.lists != null) {
+            updateStatements.push(`route.lists = [${routeFields.lists.map((_, index) => "$list_item_" + index).join(", ")}]`)
+        }
         if (updateStatements.length > 0) {
-            await queryNeo4j(`
-            MATCH (wall:Wall{id: $wallId}) -[:has]-> (route:Route{id: $routeId})
-            SET ${updateStatements.join(", ")}
-            `, {
+            let params = {
                 wallId,
                 routeId,
                 name: routeFields.name || "",
                 grade: routeFields.grade || "",
                 type: routeFields.type || "",
-            })
+            }
+            for (let i = 0; i < (routeFields.lists || []).length; i += 1) {
+                params["list_item_" + i] = routeFields.lists[i]
+            }
+            await queryNeo4j(`
+            MATCH (wall:Wall{id: $wallId}) -[:has]-> (route:Route{id: $routeId})
+            SET ${updateStatements.join(", ")}
+            `, params)
         }
     }
     if (routeFields.setterId != null) {

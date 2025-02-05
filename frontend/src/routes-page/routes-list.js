@@ -13,9 +13,28 @@ import "../components/x-dialog.js"
 import "../components/x-switch.js"
 import {FILTER_TYPES, SORT_TYPES} from "./routes-filter.js";
 
+const MAX_ROUTES_OUT_OF_SCREEN = 20
 
+let routesToShow = MAX_ROUTES_OUT_OF_SCREEN
 createYoffeeElement("routes-list", (props, self) => {
-    return html(GlobalState)`
+    let state = {
+        numRoutesToShow: routesToShow
+    }
+
+    self.addEventListener("scroll", () => {
+        let scroll = self.scrollHeight - self.scrollTop - self.clientHeight
+        if (scroll <= 300 && state.numRoutesToShow < GlobalState.routes.length) {
+            state.numRoutesToShow += MAX_ROUTES_OUT_OF_SCREEN
+            routesToShow += MAX_ROUTES_OUT_OF_SCREEN
+        }
+    })
+
+    self.addEventListener("pointerdown", () => {
+        // When starting scrolling, close open dropdowns, e.g. grade filter
+        self.focus()
+    })
+
+    return html(GlobalState, state)`
 <style>
     :host {
         display: flex;
@@ -42,15 +61,15 @@ createYoffeeElement("routes-list", (props, self) => {
     .route {
         display: flex;
         align-items: center;
-        padding: 16px 5px;
+        padding: 0 5px;
         border-radius: 0;
         color: unset;
         box-shadow: none;
-        min-height: 30px;
         height: 30px; /* Important for scroll not moving when reloading*/
         --overlay-color: rgb(var(--text-color-rgb), 0.1);
         --ripple-color: rgb(var(--text-color-rgb), 0.3);
         gap: 5px;
+        min-height: 63px;
     }
     
     .route + .route {
@@ -141,6 +160,10 @@ ${() => {
                     if (route.sent) {
                         return false
                     }
+                } else if (filter.type === FILTER_TYPES.IN_LIST) {
+                    if (!(route.lists || []).includes(filter.value)) {
+                        return false
+                    }
                 }
             }
             if (GlobalState.freeTextFilter != null) {
@@ -154,23 +177,7 @@ ${() => {
             }
             return true
         })
-        .sort((r1, r2) => {
-            if (GlobalState.sorting === SORT_TYPES.NEWEST) {
-                return r1.createdAt < r2.createdAt ? 1 : -1
-            } else if (GlobalState.sorting === SORT_TYPES.OLDEST) {
-                return r1.createdAt < r2.createdAt ? -1 : 1
-            } else if (GlobalState.sorting === SORT_TYPES.RATING) {
-                return r1.stars < r2.stars ? 1 : -1
-            } else if (GlobalState.sorting === SORT_TYPES.MOST_SENDS) {
-                return r1.sends < r2.sends ? 1 : -1
-            } else if (GlobalState.sorting === SORT_TYPES.LEAST_SENDS) {
-                return r1.sends < r2.sends ? -1 : 1
-            } else if (GlobalState.sorting === SORT_TYPES.HARDEST) {
-                return r1.grade < r2.grade ? 1 : -1
-            } else if (GlobalState.sorting === SORT_TYPES.EASIEST) {
-                return r1.grade < r2.grade ? -1 : 1
-            }
-        })
+        .filter((_, index) => index < state.numRoutesToShow)
         if (filteredRoutes.length === 0) {
             if (GlobalState.holds.length === 0) {
                 return null

@@ -31,6 +31,9 @@ const GlobalState = {
     /** @type {Route[]} */
     routes: [],
 
+    /** @type {string[]} */
+    lists: [],  // Hold list names
+
     /** @type {Route} */
     selectedRoute: null,
 
@@ -78,6 +81,7 @@ async function loadRoutesAndHolds(includeWallInfo, wallId) {
         GlobalState.selectedWall = response.wallInfo
     }
 
+    let lists = new Set()
     for (let route of response.routes) {
         if (GlobalState.selectedWall.likedRouteIds.has(route.id)) {
             route.liked = true
@@ -85,9 +89,11 @@ async function loadRoutesAndHolds(includeWallInfo, wallId) {
         if (GlobalState.selectedWall.sentRouteIds.has(route.id)) {
             route.sent = true
         }
+        (route.lists || []).forEach(list => lists.add(list))
     }
-
     GlobalState.routes = response.routes
+    GlobalState.lists = [...lists].sort((a, b) => a < b ? -1 : 1)
+    sortRoutes()
     GlobalState.holds = response.holds
     GlobalState.holdMapping = new Map()
     for (let hold of GlobalState.holds) {
@@ -198,6 +204,30 @@ function onBackClicked() {
     }
 }
 
+function sortRoutes() {
+    GlobalState.routes = GlobalState.routes.sort((r1, r2) => {
+        if (GlobalState.sorting === SORT_TYPES.NEWEST) {
+            return r1.createdAt < r2.createdAt ? 1 : -1
+        } else if (GlobalState.sorting === SORT_TYPES.OLDEST) {
+            return r1.createdAt < r2.createdAt ? -1 : 1
+        } else if (GlobalState.sorting === SORT_TYPES.RATING) {
+            return r1.stars < r2.stars ? 1 : -1
+        } else if (GlobalState.sorting === SORT_TYPES.MOST_SENDS) {
+            return r1.sends < r2.sends ? 1 : -1
+        } else if (GlobalState.sorting === SORT_TYPES.LEAST_SENDS) {
+            return r1.sends < r2.sends ? -1 : 1
+        } else if (GlobalState.sorting === SORT_TYPES.HARDEST) {
+            return r1.grade < r2.grade ? 1 : -1
+        } else if (GlobalState.sorting === SORT_TYPES.EASIEST) {
+            return r1.grade < r2.grade ? -1 : 1
+        }
+    })
+}
+
+function isInRoutesPage() {
+    return GlobalState.selectedRoute == null && !GlobalState.inSettingsPage && !GlobalState.configuringHolds
+}
+
 registerUrlListener(() => onBackClicked())
 
 async function signOut() {
@@ -221,5 +251,7 @@ export {
     toggleSentRoute,
     signOut,
     onBackClicked,
-    isAdmin
+    isAdmin,
+    sortRoutes,
+    isInRoutesPage
 }

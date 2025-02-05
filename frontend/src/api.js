@@ -113,6 +113,12 @@ async function getWalls() {
     return await post("/api/getWalls", {})
 }
 
+/**
+ *
+ * @param includeWallInfo
+ * @param wallId
+ * @returns {Promise<{wallInfo: Wall, routes: [Route], holds: [Hold]}>}
+ */
 async function getRoutesAndHolds(includeWallInfo, wallId) {
     return await post("/api/getRoutesAndHolds", {
         wallId: wallId || GlobalState.selectedWall.id,

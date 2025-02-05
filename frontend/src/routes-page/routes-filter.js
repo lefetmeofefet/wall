@@ -1,6 +1,6 @@
 import {html, createYoffeeElement} from "../../libs/yoffee/yoffee.min.js"
 import {
-    GlobalState,
+    GlobalState, sortRoutes,
 } from "../state.js";
 import "../components/text-input.js"
 import "../components/x-loader.js"
@@ -32,6 +32,7 @@ const FILTER_TYPES = {
     NOT_SENT_BY_ME: "Not sent by me",
     SETTER: "Setter",
     RATING: "Rating",
+    IN_LIST: "In list",
 }
 
 
@@ -65,6 +66,12 @@ createYoffeeElement("routes-filter", (props, self) => {
             let setterTag = self.shadowRoot.querySelector(`.tag[data-filter-type="${filterTypeToHtml(FILTER_TYPES.SETTER)}"]`)
             setterTag.dispatchEvent(new Event('mousedown'))
             setterTag.focus()
+        } else if (filterType === FILTER_TYPES.IN_LIST) {
+            setFilter(FILTER_TYPES.IN_LIST, "list")
+            state.editedFilterType = filterType
+            let listTag = self.shadowRoot.querySelector(`.tag[data-filter-type="${filterTypeToHtml(FILTER_TYPES.IN_LIST)}"]`)
+            listTag.dispatchEvent(new Event('mousedown'))
+            listTag.focus()
         } else if (filterType === FILTER_TYPES.RATING) {
             setFilter(FILTER_TYPES.RATING, 1)
         } else if (filterType === FILTER_TYPES.LIKED_ROUTES) {
@@ -96,6 +103,17 @@ createYoffeeElement("routes-filter", (props, self) => {
                 // If we're clicking a different filter, we shouldn't close the dialog
                 _dropdown.close()
                 requestAnimationFrame(() => _dropdown.open(setterTag, true))
+            }
+            state.editedFilterType = filter.type
+        } else if (filter.type === FILTER_TYPES.IN_LIST) {
+            let _dropdown = self.shadowRoot.querySelector("#edit-filter-dialog")
+            let listTag = self.shadowRoot.querySelector(`.tag[data-filter-type="${filterTypeToHtml(FILTER_TYPES.IN_LIST)}"]`)
+            if (state.editedFilterType === filter.type) {
+                _dropdown.toggle(listTag, true)
+            } else {
+                // If we're clicking a different filter, we shouldn't close the dialog
+                _dropdown.close()
+                requestAnimationFrame(() => _dropdown.open(listTag, true))
             }
             state.editedFilterType = filter.type
         } else if (filter.type === FILTER_TYPES.RATING) {
@@ -242,6 +260,7 @@ createYoffeeElement("routes-filter", (props, self) => {
          onclick=${() => {
              self.shadowRoot.querySelector("#sorting-dialog").close()
              GlobalState.sorting = sortType
+             sortRoutes()
          }}>
         ${sortType}
     </div>
@@ -303,6 +322,13 @@ ${() => GlobalState.filters.map(filter => html(filter)`
                 Not sent
             </div>
             `
+        } else if (filter.type === FILTER_TYPES.IN_LIST) {
+            return html()`
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <x-icon icon="fa fa-list-ul" style="color: var(--text-color-weak);"></x-icon>
+                ${filter.value}
+            </div>
+            `
         }
     }}
     </div>
@@ -360,6 +386,24 @@ ${() => GlobalState.filters.map(filter => html(filter)`
                 `)}
             </div>
             `
+        } else if (state.editedFilterType === FILTER_TYPES.IN_LIST) {
+            if (existingFilter == null) {
+                return
+            }
+            return html()`
+            <div class="dropdown-list-dialog">
+                ${() => GlobalState.lists.map(list => html()`
+                <div class="item"
+                     data-selected=${() => list === GlobalState.filters.find(filter => filter.type === FILTER_TYPES.IN_LIST)?.value}
+                     onclick=${() => {
+                         setFilter(FILTER_TYPES.IN_LIST, list)
+                         requestAnimationFrame(() => self.shadowRoot.querySelector("#edit-filter-dialog").close())
+                     }}>
+                    ${() => list}
+                </div>
+                `)}
+            </div>
+            `
         }
     }}
 </x-dialog>
@@ -396,6 +440,8 @@ ${() => GlobalState.filters.map(filter => html(filter)`
                 return html()`<x-icon class="item-icon" icon="fa fa-check" style="color: var(--great-success-color);"></x-icon>`
             } else if (filterType === FILTER_TYPES.NOT_SENT_BY_ME) {
                 return html()`<x-icon class="item-icon" icon="fa fa-times" style="color: var(--danger-zone-color);"></x-icon>`
+            } else if (filterType === FILTER_TYPES.IN_LIST) {
+                return html()`<x-icon class="item-icon" icon="fa fa-list-ul"></x-icon>`
             }
         }}
         ${filterType}

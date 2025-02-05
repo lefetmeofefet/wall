@@ -29,12 +29,13 @@ customElements.define("x-checkbox", class extends YoffeeElement {
                         background-color: #00000000;
                         box-shadow: none;
                         padding: 3px;
-                        border: 2px solid rgba(83, 62, 30, 0.6);
+                        border: 2px solid #99999920;
                         border-radius: inherit;
                     }
                     
                     x-button[is-on] {
-                        background-color: rgb(83, 62, 30);
+                        border-color: var(--on-color, rgb(83, 62, 30));
+                        background-color: var(--on-color, rgb(83, 62, 30));
                     }
                     
                     #check {

@@ -14,13 +14,16 @@ import {Bluetooth} from "../bluetooth.js";
 import {ROUTE_TYPES} from "/consts.js";
 
 
-
 createYoffeeElement("single-route-page", (props, self) => {
     let state = {
         editMode: GlobalState.selectedRoute?.isNew,
         editingTitle: false,
         highlightingRoute: GlobalState.autoLeds,
+        editingLists: false,
     }
+    let listsState = {}
+    GlobalState.selectedRoute?.lists?.forEach(list => listsState[list] = true)
+
     if (GlobalState.selectedRoute?.isNew) {
         GlobalState.selectedRoute.isNew = undefined
     }
@@ -157,6 +160,10 @@ createYoffeeElement("single-route-page", (props, self) => {
         color: var(--text-color);
     }
     
+    x-checkbox {
+        --on-color: var(--secondary-color);
+    }
+    
     #grade-dialog, #setter-dialog {
         max-height: 395px;
         overflow-y: auto;
@@ -273,33 +280,75 @@ createYoffeeElement("single-route-page", (props, self) => {
                 }}
     ></text-input>
     
-    ${() => (GlobalState.user.id === setterId() || isAdmin()) && html()`
-    <x-button slot="dialog-item"
-              onclick=${async () => {
-                  if (GlobalState.selectedRoute?.sends > 0) {
-                      let senders = await Api.getRouteSenders(GlobalState.selectedRoute.id)
-                      alert("Senders:\n" + senders.map(sender => "- " + sender.nickname).join("\n"))
-                  }
-              }}>
-        <x-icon icon="fa fa-check" style="width: 20px;"></x-icon>
-        ${() => GlobalState.selectedRoute?.sends} sends
-    </x-button>
-    <x-button slot="dialog-item"
-              onclick=${() => self.shadowRoot.querySelector("#route-name-input")?.focus()}>
-        <x-icon icon="fa fa-edit" style="width: 20px;"></x-icon>
-        Edit route name
-    </x-button>
-    <x-button slot="dialog-item"
-              onclick=${async () => {
-                    if (confirm(`Delete route ${GlobalState.selectedRoute.name}?`)) {
-                        await Api.deleteRoute(GlobalState.selectedRoute.id)
-                        await exitRoutePage()
+    ${() => (GlobalState.user.id === setterId() || isAdmin()) && (state.editingLists ? html(listsState)`
+        ${() => GlobalState.lists.map(list => html(listsState)`
+        <x-button slot="dialog-item" 
+                  onclick=${async e => {
+                    e.stopPropagation()
+                    listsState[list] = !listsState[list]
+                    let currentLists = GlobalState.selectedRoute.lists || []
+                    let lists = listsState[list] ? [...currentLists, list] : currentLists.filter(l => l !== list)
+                    GlobalState.selectedRoute.lists = lists
+                    await Api.updateRoute(
+                        GlobalState.selectedRoute.id, 
+                        {lists}
+                    )
+                  }}>
+            <x-checkbox value=${() => listsState[list]}></x-checkbox>
+            ${() => list}
+        </x-button>
+        `)}
+        
+        <x-button slot="dialog-item" 
+                  onclick=${async e => {
+                    e.stopPropagation()
+                    let list = prompt("Enter new list name")
+                    if (list != null) {
+                        state[list] = true
+                        
+                        GlobalState.selectedRoute.lists = [...(GlobalState.selectedRoute.lists || []), list]
+                        GlobalState.lists = [...GlobalState.lists, list].sort((a, b) => a < b ? -1 : 1)
+                        await Api.updateRoute(
+                            GlobalState.selectedRoute.id,
+                            {lists: GlobalState.selectedRoute.lists}
+                        )
                     }
-                }}>
-        <x-icon icon="fa fa-trash" style="width: 20px;"></x-icon>
-        Delete route
-    </x-button>
-    `}
+                  }}>
+            <x-icon icon="fa fa-plus" style="width: 26px;"></x-icon>
+            Create new list
+        </x-button>
+    ` : html()`
+        <x-button slot="dialog-item"
+                  onclick=${async () => {
+                      if (GlobalState.selectedRoute?.sends > 0) {
+                          let senders = await Api.getRouteSenders(GlobalState.selectedRoute.id)
+                          alert("Senders:\n" + senders.map(sender => "- " + sender.nickname).join("\n"))
+                      }
+                  }}>
+            <x-icon icon="fa fa-check" style="width: 20px;"></x-icon>
+            ${() => GlobalState.selectedRoute?.sends} sends
+        </x-button>
+        <x-button slot="dialog-item"
+                  onclick=${() => state.editingLists = true}>
+            <x-icon icon="fa fa-plus" style="width: 20px;"></x-icon>
+            Add to list
+        </x-button>
+        <x-button slot="dialog-item"
+                  onclick=${() => self.shadowRoot.querySelector("#route-name-input")?.focus()}>
+            <x-icon icon="fa fa-edit" style="width: 20px;"></x-icon>
+            Edit route name
+        </x-button>
+        <x-button slot="dialog-item"
+                  onclick=${async () => {
+                        if (confirm(`Delete route ${GlobalState.selectedRoute.name}?`)) {
+                            await Api.deleteRoute(GlobalState.selectedRoute.id)
+                            await exitRoutePage()
+                        }
+                    }}>
+            <x-icon icon="fa fa-trash" style="width: 20px;"></x-icon>
+            Delete route
+        </x-button>
+    `)}
     
     <div id="bottom-row"
          slot="bottom-row">

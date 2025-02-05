@@ -1,20 +1,31 @@
 import {exitWall, GlobalState} from "./state.js";
 import {showToast} from "../utilz/toaster.js";
 import {Api} from "./api.js";
+import {isInFlutter} from "./flutter-interface.js";
 
 const WALL_SERVICE_ID = '5c8468d0-024e-4a0c-a2f1-4742299119e3'
 const CHARACTERISTIC_ID = '82155e2a-76a2-42fb-8273-ea01aa87c5be'
 
 let characteristic
-
+let btServer
 
 async function disconnectFromBluetooth() {
+    try {
+        await btServer.disconnect()
+    } catch(e) {
+        console.log("Failed disconnecting from BT")
+        console.error(e)
+    }
     GlobalState.bluetoothConnected = false
     characteristic = null
 }
 
 // Scan and display available walls
 async function scanAndConnect(onMessageCb, onDisconnectCb) {
+    if (isInFlutter()) {
+        console.log("IN FLUTTER!!!")
+        // TODO: do flutter bt code
+    }
     const device = await navigator.bluetooth.requestDevice({
         filters: [{services: [WALL_SERVICE_ID]}],
         optionalServices: [WALL_SERVICE_ID],
@@ -38,8 +49,8 @@ async function scanAndConnect(onMessageCb, onDisconnectCb) {
 }
 
 async function connectToDevice(device, onMessageCb) {
-    const server = await device.gatt.connect()
-    const service = await server.getPrimaryService(WALL_SERVICE_ID)
+    btServer = await device.gatt.connect()
+    const service = await btServer.getPrimaryService(WALL_SERVICE_ID)
     characteristic = await service.getCharacteristic(CHARACTERISTIC_ID)
 
     // Receive JSON data
@@ -49,9 +60,6 @@ async function connectToDevice(device, onMessageCb) {
         onMessageCb(messageString)
     })
     await characteristic.startNotifications()
-
-    // // Disconnect after communication
-    // await server.disconnect()
 }
 
 /** @returns {Wall} */
@@ -146,6 +154,10 @@ async function sendBTMessageFromQueue(message) {
     try {
         const encoder = new TextEncoder()
         console.log("Sending to esp: ", message)
+        if (isInFlutter()) {
+            console.log("IN FUTTER!!!!")
+            // TODO: special flutter codingzz
+        }
         await characteristic.writeValue(encoder.encode(JSON.stringify(message)))
     } catch (e) {
         console.log("Error sending bluetooth message: ", {e})

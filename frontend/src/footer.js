@@ -1,5 +1,5 @@
 import {html, createYoffeeElement} from "../libs/yoffee/yoffee.min.js"
-import {exitWall, GlobalState, onBackClicked} from "./state.js";
+import {exitWall, GlobalState, isInRoutesPage, onBackClicked} from "./state.js";
 import {Bluetooth} from "./bluetooth.js";
 
 createYoffeeElement("footer-bar", (props, self) => {
@@ -58,7 +58,7 @@ createYoffeeElement("footer-bar", (props, self) => {
 <x-button id="back-button"
           onclick=${() => onBackClicked()}>
     <x-icon icon="fa fa-arrow-left"></x-icon>
-    back
+    ${() => (GlobalState.bluetoothConnected && isInRoutesPage()) ? "disconnect" : "back"}
 </x-button>
 <x-button id="connection-status"
      data-connected=${() => GlobalState.bluetoothConnected}

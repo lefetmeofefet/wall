@@ -1,7 +1,7 @@
 import {html, createYoffeeElement} from "../../libs/yoffee/yoffee.min.js"
 import {
     GlobalState,
-    enterRoutePage, exitWall, enterConfigureHoldsPage,
+    enterRoutePage, exitWall, enterConfigureHoldsPage, sortRoutes,
 } from "../state.js";
 import {Bluetooth} from "../bluetooth.js";
 import {Api} from "../api.js";
@@ -122,6 +122,7 @@ ${() => GlobalState.holds.length === 0 && html()`
                     let {route} = await Api.createRoute()
                     route.isNew = true
                     GlobalState.routes = [...GlobalState.routes, route]
+                    sortRoutes()
                     await enterRoutePage(route)
                 }}>
         ${() => GlobalState.routes.length === 0 && "Create Route"}

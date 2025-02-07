@@ -1,7 +1,7 @@
 import {exitWall, GlobalState} from "./state.js";
 import {showToast} from "../utilz/toaster.js";
 import {Api} from "./api.js";
-import {isInFlutter} from "./flutter-interface.js";
+import {Flutter} from "./flutter-interface.js";
 
 const WALL_SERVICE_ID = '5c8468d0-024e-4a0c-a2f1-4742299119e3'
 const CHARACTERISTIC_ID = '82155e2a-76a2-42fb-8273-ea01aa87c5be'
@@ -11,7 +11,9 @@ let btServer
 
 async function disconnectFromBluetooth() {
     try {
-        await btServer.disconnect()
+        if (btServer != null) {
+            await btServer.disconnect()
+        }
     } catch(e) {
         console.log("Failed disconnecting from BT")
         console.error(e)
@@ -22,7 +24,7 @@ async function disconnectFromBluetooth() {
 
 // Scan and display available walls
 async function scanAndConnect(onMessageCb, onDisconnectCb) {
-    if (isInFlutter()) {
+    if (Flutter.isInFlutter()) {
         console.log("IN FLUTTER!!!")
         // TODO: do flutter bt code
     }
@@ -154,7 +156,7 @@ async function sendBTMessageFromQueue(message) {
     try {
         const encoder = new TextEncoder()
         console.log("Sending to esp: ", message)
-        if (isInFlutter()) {
+        if (Flutter.isInFlutter()) {
             console.log("IN FUTTER!!!!")
             // TODO: special flutter codingzz
         }

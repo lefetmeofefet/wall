@@ -72,6 +72,11 @@ async function googleAuth(token) {
 }
 
 /** @returns {User} */
+async function googleLoginGoogleId(email, userGoogleId, name, photoUrl) {
+    return await post("/auth/googleSignIn", {email, userGoogleId, name, photoUrl})
+}
+
+/** @returns {User} */
 async function login(email, password) {
     return await post("/auth/login", {email, password})
 }
@@ -243,6 +248,7 @@ const Api = {
     removeHoldFromRoute,
     setRouteStars,
     googleAuth,
+    googleLoginGoogleId,
     login,
     signUp,
     setNickname,

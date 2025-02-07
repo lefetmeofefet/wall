@@ -6,6 +6,7 @@ import "../components/x-button.js"
 import "../components/x-icon.js"
 import {getUrlParams, updateUrlParams} from "../../utilz/url-utilz.js";
 import {showToast} from "../../utilz/toaster.js";
+import {Flutter} from "../flutter-interface.js";
 
 
 createYoffeeElement("login-page", (props, self) => {
@@ -82,31 +83,48 @@ createYoffeeElement("login-page", (props, self) => {
         finishLogin(user)
     }
 
+    async function signInWithGoogleToken(token) {
+        try {
+            let user = await Api.googleAuth(token)
+            await continueWithUser(user)
+        } catch(e) {
+            showToast(e.errorMessage || "Error signing in with google", {error: true})
+        }
+    }
+
+    // This function is only for calling from native flutter app
+    window.signInWithGoogleIdAndEmail = async (userGoogleId, email, name, photoUrl) => {
+        try {
+            let user = await Api.googleLoginGoogleId(email, userGoogleId, name, photoUrl)
+            await continueWithUser(user)
+        } catch(e) {
+            showToast(e.errorMessage || "Error signing in with google", {error: true})
+        }
+    }
+
     self.onConnect = () => {
         window.onGoogleLibraryLoad = () => {
-            google.accounts.id.initialize({
-                client_id: '798008696513-9jhivsjbs7j8pacr6d8dfps9qh25tbbp.apps.googleusercontent.com',
-                callback: async loginInfo => {
-                    try {
-                        let user = await Api.googleAuth(loginInfo.credential)
+            // If we're in flutter, login is handled natively
+            if (!Flutter.isInFlutter()) {
+                google.accounts.id.initialize({
+                    client_id: '798008696513-9jhivsjbs7j8pacr6d8dfps9qh25tbbp.apps.googleusercontent.com',
+                    callback: async loginInfo => {
                         console.log("Login info: ", loginInfo)
-                        await continueWithUser(user)
-                    } catch(e) {
-                        showToast(e.errorMessage || "Error signing in with google", {error: true})
+                        await signInWithGoogleToken(loginInfo.credential)
+                    },
+                })
+                google.accounts.id.renderButton(
+                    self.shadowRoot.querySelector("#google-sign-in-button"),
+                    {
+                        type: "standard",
+                        shape: "pill",
+                        theme: "filled_blue",
+                        text: "signin",
+                        size: "large",
+                        logo_alignment: "left"
                     }
-                }
-            })
-            google.accounts.id.renderButton(
-                self.shadowRoot.querySelector("#google-signin-button"),
-                {
-                    type: "standard",
-                    shape: "pill",
-                    theme: "filled_blue",
-                    text: "signin",
-                    size: "large",
-                    logo_alignment: "left"
-                }
-            )
+                )
+            }
         }
     }
 
@@ -178,8 +196,40 @@ createYoffeeElement("login-page", (props, self) => {
         opacity: 0.4;
     }
     
-    #google-signin-button {
-        max-width: 253px;
+    #google-sign-in-button {
+        display: flex;
+        align-items: center;
+        max-width: 233px;
+        border-radius: 100px;
+        background-color: #1a73e8;
+        height: 41px;
+        padding: 0;
+        justify-content: normal;
+    }
+    
+    #google-sign-in-button > #google-g-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #fff;
+        height: 36px;
+        min-width: 36px;
+        width: 36px;
+        margin-right: 12px;
+        margin-left: 3px;
+        border-radius: 18px;
+    }
+    
+    #google-sign-in-button > #google-g-container > svg {
+        min-width: 18px;
+        width: 18px;
+        height: 18px;
+    }
+    
+    #google-sign-in-button > #google-sign-in-text {
+        width: 182px;
+        text-align: center;
+        margin-right: 50px;
     }
     
     #signup {
@@ -257,7 +307,13 @@ ${() => state.nicknameMode ?
     ${() => state.signupMode ? "SIGN UP" : "LOGIN"}
 </x-button>
 <div id="or-sign-in-using">Or ${() => state.signupMode ? "sign up" : "sign in"} with</div>
-<div id="google-signin-button"></div>
+<x-button id="google-sign-in-button"
+          onclick=${() => Flutter.isInFlutter() && Flutter.triggerGoogleSignIn()}>
+    <div id="google-g-container">
+        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" class="LgbsSe-Bz112c"><g><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></g></svg>
+    </div>
+    <div id="google-sign-in-text">Sign In</div>
+</x-button>
 <div id="signup">
     ${() => state.signupMode ? "Have an account already?" : "No account yet?"} 
     <x-button onclick=${() => state.signupMode = !state.signupMode}>

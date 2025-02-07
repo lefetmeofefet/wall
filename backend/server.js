@@ -4,11 +4,9 @@ import "express-async-errors"
 import cookieParser from "cookie-parser"
 import {AuthRouter, verifyToken} from "./routers/authRouter.js";
 import {ApiRouter} from "./routers/apiRouter.js";
-import cors from "cors"
 
 const app = express()
 
-// app.use(cors()); // Allow all origins
 
 app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');

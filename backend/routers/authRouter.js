@@ -24,34 +24,55 @@ router.post('/google', async (req, res) => {
             audience: Config.googleClientId,
         })
         const payload = ticket.getPayload()
-        const email = payload.email
         const userGoogleId = payload.sub
-        const picture = payload.picture
+        const email = payload.email
         const name = payload.name
+        const photoUrl = payload.picture
 
-        let existingUser = await getUserByEmail(email)
-        let user
-        if (existingUser != null) {
-            // If existing email is not logged in through google, just convert it
-            if (existingUser.authMethod !== AUTH_METHODS.google) {
-                await convertUserToGoogle(email, userGoogleId)
-                existingUser.id = userGoogleId
-            }
-            user = existingUser
-        } else {
-            user = await createUser(userGoogleId, email, null, AUTH_METHODS.google, null)
-        }
-
+        let user = await signInGoogleUser(userGoogleId, email, name, photoUrl)
         setAuthCookie(res, user.id)
-        await updateLoginTime(user.id)
         res.json(user)
     } catch (error) {
         res.status(401).json({
             error: ERROR_MESSAGES.GOOGLE_LOGIN_FAILED,
-            errorMessage: "Google login wasn't finished"
+            errorMessage: "Google login failed, please contact app developer"
         })
     }
 })
+
+// This is called from native flutter google logins, where the email and userGoogleId is already given
+router.post('/googleSignIn', async (req, res) => {
+    const {email, userGoogleId, name, photoUrl} = req.body
+
+    try {
+        let user = await signInGoogleUser(userGoogleId, email, name, photoUrl)
+        setAuthCookie(res, user.id)
+        res.json(user)
+    } catch (error) {
+        res.status(401).json({
+            error: ERROR_MESSAGES.GOOGLE_LOGIN_FAILED,
+            errorMessage: "Google login failed, please contact app developer"
+        })
+    }
+})
+
+async function signInGoogleUser(userGoogleId, email, name, photoUrl) {
+    let existingUser = await getUserByEmail(email)
+    let user
+    if (existingUser != null) {
+        // If existing email is not logged in through google, just convert it
+        if (existingUser.authMethod !== AUTH_METHODS.google) {
+            await convertUserToGoogle(email, userGoogleId)
+            existingUser.id = userGoogleId
+        }
+        user = existingUser
+    } else {
+        user = await createUser(userGoogleId, email, null, AUTH_METHODS.google, null)
+    }
+
+    await updateLoginTime(user.id)
+    return user
+}
 
 router.post('/signUp', async (req, res) => {
     const {email, password} = req.body

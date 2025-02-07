@@ -44,6 +44,7 @@ createYoffeeElement("routes-list", (props, self) => {
         /*Making the scrollbar far to the right:*/
         margin-right: -10%; /* Negative margin equal to container's padding */
         padding-right: calc(10% - 7px); /* Prevents content from being under the scrollbar */
+        outline: none;
     }
     
     @media (max-width: 900px) {
